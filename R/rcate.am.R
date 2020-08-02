@@ -154,15 +154,19 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #'  \item nknots - number of knots of cubic spline.
 #'  }
 #' @examples
-#' n <- 1000; p <- 3
-#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
-#' tau = sin(X[,1])
-#' p = 1/(1+exp(-X[,1]))
+#' n <- 1000; p <- 10
+#' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
+#' tau = 6*sin(2*X[,1])+3*(X[,2])+X[,3]+9*tanh(0.5*X[,4])+3*X[,5]
+#' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
-#' y = 1+tau*t/2 + rnorm(n,0,0.5)
+#' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
+#' x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
+#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])+x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]
+#'
 #' fit <- rcate.am(X,y,d)
-#' y_pred <- predict.rcate.am(fit,X)$pred
+#' y_pred <- predict.rcate.am(fit,x_val)$pred
+#' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
                      lambda.smooth = 2, nlambda = 30, nfolds = 5, n.trees.p = 40000,

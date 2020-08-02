@@ -346,19 +346,24 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #'  \item pred - prediction of newdata.
 #'  }
 #' @examples
-#' n <- 1000; p <- 3
-#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
-#' tau = sin(X[,1])
-#' p = 1/(1+exp(-X[,1]))
+#' n <- 1000; p <- 10
+#' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
+#' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]+9*tanh(0.5*X[,4])+3*X[,5]*(2*I(X[,4]<1)-1)
+#' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
-#' y = 1+tau*t/2 + rnorm(n,0,0.5)
-#' fit <- rcate.rf(X,y,d)
+#' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
+#' x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
+#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]*(2*I(x_val[,4]<1)-1)
+#'
+#' # Use MCM-EA transformation and GBM to estimate CATE
+#' fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='RL')
 #' y_pred <- fit$pred
+#' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.rf <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                   n.trees.p = 40000, shrinkage.p = 0.005, n.minobsinnode.p = 10,
-                  interaction.depth.p = 1, cv.p = 2, n.trees.mu = c(1:50) * 50,
+                  interaction.depth.p = 1, cv.p = 5, n.trees.mu = c(1:50) * 50,
                   shrinkage.mu = 0.01, n.minobsinnode.mu = 5,
                   interaction.depth.mu = 5, cv.mu = 5,
                   n.trees.rf = 50, feature.frac = 1/2, newdata = NULL, minnodes = 5) {

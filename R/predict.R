@@ -2,8 +2,6 @@
 #'
 #' \code{predict} returns the robust treatment effect estimation result.
 #'
-#' This is a generic function:
-#'
 #' @param object "RCATE" object.
 #' @param x matrix or a data frame of predictors.
 #' @return a list of components
@@ -24,7 +22,6 @@
 #' y = 1+tau*t/2 + rnorm(n,0,0.5)
 #' fit <- rcate.ml(X,y,d)
 #' y_pred <- predict.rcate.ml(fit,X)$predict
-
 predict.rcate.ml <- function(object, x) {
   algorithm <- object$algorithm
     model <- object$model

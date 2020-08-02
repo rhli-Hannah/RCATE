@@ -1,4 +1,4 @@
-#library(MASS);library(gbm);library(caret);library(plyr);library(dplyr);library(randomForest);library(rmutil)
+#library(MASS);library(gbm);library(caret);library(plyr);library(dplyr);library(randomForest);library(rmutil);library(keras);library(tensorflow)
 
 #' Robust estimation of treatment effect.
 #'
@@ -55,21 +55,28 @@
 #'  \item n.trees.gbm - number of trees for estimating treatment effect function if algorithm='GBM'.
 #'  }
 #' @examples
-#' n <- 5000; p <- 3
+#' n <- 1000; p <- 10
 #' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
-#' tau = 3+3*sin(X[,1])
-#' p = 1/(1+exp(-X[,1]))
+#' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]+9*tanh(0.5*X[,4])+3*X[,5]*(2*I(X[,4]<1)-1)
+#' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
-#' y = 1+tau*t/2 + rnorm(n,0,0.5)
+#' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
+#' x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
+#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 #' # Use MCM-EA transformation and GBM to estimate CATE
-#' fit <- rcate.ml(X,y,d)
-#' y_pred <- predict.rcate.ml(fit,X)$predict
-#' plot(y,y_pred);abline(0,1)
+#' fit <- rcate.ml(X,y,d,method='RL')
+#' y_pred <- predict.rcate.ml(fit,x_val)$predict
+#' plot(tau_val,y_pred);abline(0,1)
+#'
+#' #' # Use DR transformation and NN to estimate CATE
+#' fit <- rcate.ml(X,y,d,method='DR',algorithm='NN')
+#' y_pred <- predict.rcate.ml(fit,x_val)$predict
+#' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                   n.trees.p = 40000, shrinkage.p = 0.005, n.minobsinnode.p = 10,
-                  interaction.depth.p = 1, cv.p = 2, n.trees.mu = c(1:50) * 50,
+                  interaction.depth.p = 1, cv.p = 5, n.trees.mu = c(1:50) * 50,
                   shrinkage.mu = 0.01, n.minobsinnode.mu = 5,
                   interaction.depth.mu = 5, cv.mu = 5, n.trees.gbm = 1000,
                   interaction.depth.gbm = 2, n.cells.nn = NA, dropout.nn = NA,
