@@ -26,6 +26,7 @@
 #' fit <- rcate.ml(X,y,d,method='RL')
 #' y_pred <- predict.rcate.ml(fit,x_val)$predict
 #' plot(tau_val,y_pred);abline(0,1)
+#' @export
 predict.rcate.ml <- function(object, x) {
   algorithm <- object$algorithm
     model <- object$model
@@ -68,6 +69,7 @@ predict.rcate.ml <- function(object, x) {
 #' fit <- rcate.am(X,y,d)
 #' y_pred <- predict.rcate.am(fit,x_val)$pred
 #' plot(tau_val,y_pred);abline(0,1)
+#' @export
 predict.rcate.am <- function(object, x) {
     algorithm <- object$algorithm
     model <- object$model
