@@ -4,8 +4,8 @@ wmed_var <- function(x, y, weight) {
     wmed <- c()
     for (i in seq_along(splits)) {
         sp <- splits[i]
-        wmed[i] <- sum(abs(y[x < sp] - median(y[x < sp])) * weight[x < sp]) +
-            sum(abs(y[x >= sp] - median(y[x >= sp])) * weight[x >= sp])
+        wmed[i] <- sum(abs(y[x < sp] - stats::median(y[x < sp])) * weight[x < sp]) +
+            sum(abs(y[x >= sp] - stats::median(y[x >= sp])) * weight[x >= sp])
     }
     split_at <- splits[which.min(wmed)]
     return(c(wmed = min(wmed), split = split_at))
@@ -48,10 +48,10 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
     newdata <- as.data.frame(newdata)
 
     # handle formula
-    formula <- terms.formula(formula)
+    formula <- stats::terms.formula(formula)
 
     # get the design matrix
-    X <- model.matrix(formula, data)
+    X <- stats::model.matrix(formula, data)
 
     # extract target
     y <- data[, as.character(formula)[2]]
@@ -78,7 +78,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
                 # subset data according to the filter
                 this_data <- subset(data, eval(parse(text = tree_info[j, "FILTER"])))
                 # get the design matrix
-                X <- model.matrix(formula, this_data)
+                X <- stats::model.matrix(formula, this_data)
                 weight <- weights[as.numeric(row.names(X))]
                 # print(X)
                 # print(weight)
@@ -119,7 +119,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
                                nobs <- nrow(df)
                                w <- nobs/nrow(data)
                                y <- df[, all.vars(formula)[1]]
-                               imp <- mean(abs(y - median(y, na.rm = TRUE)))
+                               imp <- mean(abs(y - stats::median(y, na.rm = TRUE)))
                                return(c(nobs, w*imp))
                            },
                            x = this_data, data = data, formula = formula)
@@ -128,7 +128,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
             current_nobs <- sapply(metr, function(x) x[[1]])
             imp_sum_child <- sum(sapply(metr, function(x) x[[2]]))
             current_y <- this_data[, all.vars(formula)[1]]
-            imp_parent <- nrow(this_data)/nrow(data) * mean(abs(current_y-median(current_y)))
+            imp_parent <- nrow(this_data)/nrow(data) * mean(abs(current_y-stats::median(current_y)))
             imp_gini <- imp_parent - imp_sum_child
 
             # insufficient minsize for split
@@ -168,8 +168,8 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
         # extract index
         ind <- as.numeric(rownames(subset(data, eval(parse(text = leafs[i, "FILTER"])))))
         # estimator is the median y value of the leaf
-        fitted[ind] <- median(y[ind])
-        nodepred[i] <- median(y[ind])
+        fitted[ind] <- stats::median(y[ind])
+        nodepred[i] <- stats::median(y[ind])
     }
 
     # calculate predicted values
@@ -185,7 +185,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
     imp <- tree_info[, c("SPLIT", "IMP_GINI")]
 
     if (!all(is.na(imp$SPLIT))) {
-        imp <- aggregate(IMP_GINI ~ SPLIT, FUN = function(x, all) sum(x, na.rm = T)/sum(all, na.rm = T),
+        imp <- stats::aggregate(IMP_GINI ~ SPLIT, FUN = function(x, all) sum(x, na.rm = T)/sum(all, na.rm = T),
                          data = imp, all = imp$IMP_GINI)
     }
 
@@ -205,9 +205,9 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 #'
 #' @param formula an object of class "formula".
 #' @param n_trees number of trees. Default is 50.
-#' @param feature_frac
+#' @param feature_frac fraction of features used in each split. Default is 1/2.
 #' @param data a training data frame.
-#' @param minsize minimal leaf size of tree. Default is 5.
+#' @param minnodes minimal leaf size of tree. Default is 5.
 #' @param newdata an optional test data frame. If NULL, the newdata=data.
 #' @param weights an optional vector of weights.
 #' @return a list of components
@@ -225,9 +225,6 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 #' plot(y,y_pred)
 #' @export
 reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights, minnodes=5) {
-
-    # load plyr
-    require(plyr)
 
     # define function to sprout a single tree
     sprout_tree <- function(formula, feature_frac, data, newdata, weights) {
@@ -252,7 +249,7 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 
         # create new formula
         formula_new <-
-            as.formula(paste0(target, " ~ -1 + ", paste0(features_sample,
+            stats::as.formula(paste0(target, " ~ -1 + ", paste0(features_sample,
                                                          collapse =  " + ")))
 
         # fit the regression tree
@@ -354,7 +351,8 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #' t = 2*d-1
 #' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
 #' x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
-#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]*(2*I(x_val[,4]<1)-1)
+#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
+#' 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 #'
 #' # Use MCM-EA transformation and GBM to estimate CATE
 #' fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='RL')
@@ -379,9 +377,9 @@ rcate.rf <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                              n.minobsinnode = n.minobsinnode.p)
     gbmFit.p <- caret::train(d ~ ., data = data.p, method = "gbm",
                              verbose = FALSE,
-                             trControl = trainControl(method = "cv", number = cv.p),
+                             trControl = caret::trainControl(method = "cv", number = cv.p),
                              tuneGrid = gbmGrid.p)
-    pscore.hat <- predict(gbmFit.p, newdata = data.p, type = "prob")[, 2]
+    pscore.hat <- caret::predict.train(gbmFit.p, newdata = data.p, type = "prob")[, 2]
 
     data00 <- data.frame(cbind(y, x, d))
     colnames(data00) <- c("y", paste0("X", 1:ncol(x)), "d")
@@ -393,20 +391,20 @@ rcate.rf <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                               n.minobsinnode = n.minobsinnode.mu)
     gbmFit.mu <- caret::train(y ~ ., data = data00[, -ncol(data00)],
                               method = "gbm", verbose = FALSE,
-                              trControl = trainControl(method = "cv",
+                              trControl = caret::trainControl(method = "cv",
                                                        number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
     gbmFit.mu1 <- caret::train(y ~ ., data = data021[, -ncol(data021)],
                                method = "gbm", verbose = FALSE,
-                               trControl = trainControl(method = "cv",
+                               trControl = caret::trainControl(method = "cv",
                                                         number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
     gbmFit.mu0 <- caret::train(y ~ ., data = data020[, -ncol(data020)],
                                method = "gbm", verbose = FALSE,
-                               trControl = trainControl(method = "cv",
+                               trControl = caret::trainControl(method = "cv",
                                                         number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
 
-    mu0 <- predict(gbmFit.mu0, newdata = data00)
-    mu1 <- predict(gbmFit.mu1, newdata = data00)
-    mu.ea <- predict(gbmFit.mu, newdata = data00)
+    mu0 <- caret::predict.train(gbmFit.mu0, newdata = data00)
+    mu1 <- caret::predict.train(gbmFit.mu1, newdata = data00)
+    mu.ea <- caret::predict.train(gbmFit.mu, newdata = data00)
 
     # Do transformation
     if (method == "MCMEA") {
@@ -423,7 +421,7 @@ rcate.rf <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
 
     data.rf <-  data.frame(y.tr,x)
     if (is.null(newdata)) {newdata.rf <- data.rf} else {newdata.rf <- data.frame(newdata)}
-    formula.rf <- as.formula(paste0('y.tr', " ~ ",paste0(colnames(data.frame(x)), collapse = " + ")))
+    formula.rf <- stats::as.formula(paste0('y.tr', " ~ ",paste0(colnames(data.frame(x)), collapse = " + ")))
     result <- reg_rf(formula=formula.rf, n_trees = n.trees.rf, feature_frac = feature.frac,
            data=data.rf, newdata=newdata.rf, weights = w.tr, minnodes = 5)
 

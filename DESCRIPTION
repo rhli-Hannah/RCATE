@@ -18,7 +18,9 @@ Imports:
         splines,
         rqPen,
         keras,
-        tensorflow
+        tensorflow,
+        e1071,
+        qpdf
 RoxygenNote: 7.1.0
 BuildVignettes: true
 Suggests: 

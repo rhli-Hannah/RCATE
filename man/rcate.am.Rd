@@ -113,6 +113,6 @@ x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
 tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])+x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]
 
 fit <- rcate.am(X,y,d)
-y_pred <- predict.rcate.am(fit,x_val)$pred
+y_pred <- predict(fit,x_val)$pred
 plot(tau_val,y_pred);abline(0,1)
 }

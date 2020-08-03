@@ -103,7 +103,8 @@ d = rbinom(n,1,p)
 t = 2*d-1
 y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
 x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
-tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]*(2*I(x_val[,4]<1)-1)
+tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
+3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 
 # Use MCM-EA transformation and GBM to estimate CATE
 fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='RL')

@@ -2,7 +2,7 @@
 # library(rqPen);library(splines)
 
 Btilde.fun <- function(x, lambda2, knots2) {
-  B <- bs(x, degree = 3, knots = knots2, Boundary.knots = c(-4, 4))
+  B <- splines::bs(x, degree = 3, knots = knots2, Boundary.knots = c(-4, 4))
   D <- diff(diag(ncol(B)), differences = 2)
   Omega <- crossprod(D)
   n <- length(x)
@@ -26,7 +26,7 @@ B_R <- function(x2, x3, lambda2br, knots.op1,colnum) {
 # Genrate knots
 knot <- function(x, knots.op) {
   knot.mat = apply(x, 2, function(y)
-    quantile(y, probs = head(seq(0, 1, length.out = as.numeric(knots.op + 2)), -1)[-1]))
+    stats::quantile(y, probs = utils::head(seq(0, 1, length.out = as.numeric(knots.op + 2)), -1)[-1]))
   return(knot.mat)
 }
 
@@ -61,7 +61,7 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 
 
   for (i in 1:p) {
-    xbs[, (i - 1) * (df0) + (1:df0)] = ns(x[, i], df = df0)
+    xbs[, (i - 1) * (df0) + (1:df0)] = splines::ns(x[, i], df = df0)
   }
 
 
@@ -69,7 +69,7 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 
   curloop = 1
   for (i in 1:p) {
-    tempfit <- lm.fit(x = cbind(1, xbs[, (i - 1) * df0 + 1:df0]), y = y)
+    tempfit <- stats::lm.fit(x = cbind(1, xbs[, (i - 1) * df0 + 1:df0]), y = y)
     tempresi[i] <- sum(tempfit$residuals^2)
   }
 
@@ -83,10 +83,10 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
   mindex <- sample(1:n)
   mresi = NULL
   for (i in 1:p) {
-    tempfit <- lm.fit(x = cbind(1, xbs[, (i - 1) * df0 + 1:df0]), y = y[mindex])
+    tempfit <- stats::lm.fit(x = cbind(1, xbs[, (i - 1) * df0 + 1:df0]), y = y[mindex])
     mresi[i] <- sum(tempfit$residuals^2)
   }
-  resi.thres = quantile(mresi, 1 - quant)
+  resi.thres = stats::quantile(mresi, 1 - quant)
   nsis <- max(min(sum(used.list < resi.thres), floor(n/df0/3)), 2)
 
 
@@ -165,7 +165,7 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])+x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]
 #'
 #' fit <- rcate.am(X,y,d)
-#' y_pred <- predict.rcate.am(fit,x_val)$pred
+#' y_pred <- predict(fit,x_val)$pred
 #' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
@@ -218,9 +218,9 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
                            n.trees = n.trees.p, shrinkage = shrinkage.p,
                            n.minobsinnode = n.minobsinnode.p)
   gbmFit.p <- caret::train(d ~ ., data = data.p, method = "gbm",
-                           verbose = FALSE, trControl = trainControl(method = "cv", number = cv.p),
+                           verbose = FALSE, trControl = caret::trainControl(method = "cv", number = cv.p),
                            tuneGrid = gbmGrid.p)
-  pscore.hat <- predict(gbmFit.p, newdata = data.p, type = "prob")[, 2]
+  pscore.hat <- caret::predict.train(gbmFit.p, newdata = data.p, type = "prob")[, 2]
 
   data00 <- data.frame(cbind(y, x, d))
   colnames(data00) <- c("y", paste0("X", 1:ncol(x)), "d")
@@ -231,18 +231,18 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
                             n.trees = n.trees.mu, shrinkage = shrinkage.mu,
                             n.minobsinnode = n.minobsinnode.mu)
   gbmFit.mu <- caret::train(y ~ ., data = data00[, -ncol(data00)],
-                            method = "gbm", verbose = FALSE, trControl = trainControl(method = "cv",
+                            method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
                             number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
   gbmFit.mu1 <- caret::train(y ~ ., data = data021[, -ncol(data021)],
-                             method = "gbm", verbose = FALSE, trControl = trainControl(method = "cv",
+                             method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
                              number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
   gbmFit.mu0 <- caret::train(y ~ ., data = data020[, -ncol(data020)],
-                             method = "gbm", verbose = FALSE, trControl = trainControl(method = "cv",
+                             method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
                              number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
 
-  mu0 <- predict(gbmFit.mu0, newdata = data00)
-  mu1 <- predict(gbmFit.mu1, newdata = data00)
-  mu.ea <- predict(gbmFit.mu, newdata = data00)
+  mu0 <- caret::predict.train(gbmFit.mu0, newdata = data00)
+  mu1 <- caret::predict.train(gbmFit.mu1, newdata = data00)
+  mu.ea <- caret::predict.train(gbmFit.mu, newdata = data00)
 
   # Do transformation
   if (method == "MCMEA") {
@@ -269,9 +269,8 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
 
   # Fit the weighted LAD model with group SCAD
   model <- rqPen::cv.rq.group.pen(x = x.tr1, y = y.tr, groups = as.factor(c(max(group)+1, group)),
-                                  tau = 0.5, penalty = "SCAD", intercept = FALSE,
-                                  nfolds = nfolds, criteria = "BIC", nlambda = nlambda,
-                                  cvFunc = "AE")
+                                  tau = 0.5, intercept = FALSE, penalty = 'SCAD',
+                                  nfolds = nfolds, criteria = "BIC", nlambda = nlambda)
   # Get coefficients and fitted value
   coef <- coef(model)
   fitted.values <- cbind(rep(1, nrow(Btilde)), Btilde) %*% coef

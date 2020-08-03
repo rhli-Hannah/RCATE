@@ -19,13 +19,15 @@ reg_rf(
 
 \item{n_trees}{number of trees. Default is 50.}
 
+\item{feature_frac}{fraction of features used in each split. Default is 1/2.}
+
 \item{data}{a training data frame.}
 
 \item{newdata}{an optional test data frame. If NULL, the newdata=data.}
 
 \item{weights}{an optional vector of weights.}
 
-\item{minsize}{minimal leaf size of tree. Default is 5.}
+\item{minnodes}{minimal leaf size of tree. Default is 5.}
 }
 \value{
 a list of components

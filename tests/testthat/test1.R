@@ -1,8 +1,4 @@
 
-test_that("str_length", {
-  expect_equal(str_length("a"),1)
-})
-
 check_api <- function() {
   #if (not_working()) {
     skip("API not available")

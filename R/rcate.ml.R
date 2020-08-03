@@ -63,15 +63,11 @@
 #' t = 2*d-1
 #' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
 #' x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
-#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]*(2*I(x_val[,4]<1)-1)
+#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
+#' 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 #' # Use MCM-EA transformation and GBM to estimate CATE
 #' fit <- rcate.ml(X,y,d,method='RL')
-#' y_pred <- predict.rcate.ml(fit,x_val)$predict
-#' plot(tau_val,y_pred);abline(0,1)
-#'
-#' #' # Use DR transformation and NN to estimate CATE
-#' fit <- rcate.ml(X,y,d,method='DR',algorithm='NN')
-#' y_pred <- predict.rcate.ml(fit,x_val)$predict
+#' y_pred <- predict(fit,x_val)$predict
 #' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
@@ -103,9 +99,9 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                            n.minobsinnode = n.minobsinnode.p)
   gbmFit.p <- caret::train(d ~ ., data = data.p, method = "gbm",
                            verbose = FALSE,
-                           trControl = trainControl(method = "cv", number = cv.p),
+                           trControl = caret::trainControl(method = "cv", number = cv.p),
                            tuneGrid = gbmGrid.p)
-  pscore.hat <- predict(gbmFit.p, newdata = data.p, type = "prob")[, 2]
+  pscore.hat <- caret::predict.train(gbmFit.p, newdata = data.p, type = "prob")[, 2]
 
   data00 <- data.frame(cbind(y, x, d))
   colnames(data00) <- c("y", paste0("X", 1:ncol(x)), "d")
@@ -117,20 +113,20 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                             n.minobsinnode = n.minobsinnode.mu)
   gbmFit.mu <- caret::train(y ~ ., data = data00[, -ncol(data00)],
                             method = "gbm", verbose = FALSE,
-                            trControl = trainControl(method = "cv",
+                            trControl = caret::trainControl(method = "cv",
                             number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
   gbmFit.mu1 <- caret::train(y ~ ., data = data021[, -ncol(data021)],
                              method = "gbm", verbose = FALSE,
-                             trControl = trainControl(method = "cv",
+                             trControl = caret::trainControl(method = "cv",
                              number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
   gbmFit.mu0 <- caret::train(y ~ ., data = data020[, -ncol(data020)],
                              method = "gbm", verbose = FALSE,
-                             trControl = trainControl(method = "cv",
+                             trControl = caret::trainControl(method = "cv",
                              number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
 
-  mu0 <- predict(gbmFit.mu0, newdata = data00)
-  mu1 <- predict(gbmFit.mu1, newdata = data00)
-  mu.ea <- predict(gbmFit.mu, newdata = data00)
+  mu0 <- caret::predict.train(gbmFit.mu0, newdata = data00)
+  mu1 <- caret::predict.train(gbmFit.mu1, newdata = data00)
+  mu.ea <- caret::predict.train(gbmFit.mu, newdata = data00)
 
   # Do transformation
   if (method == "MCMEA") {
@@ -154,7 +150,7 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                       interaction.depth = interaction.depth.gbm)
     df.x <- data.frame(x)
     colnames(df.x) <- paste0("X", 1:ncol(x))
-    fitted.values <- predict(model, df.x, n.trees = n.trees.gbm)
+    fitted.values <- gbm::predict.gbm(model, df.x, n.trees = n.trees.gbm)
   } else if (algorithm == "NN") {
     x = as.matrix(x)
     y = as.matrix(y.tr)
@@ -171,9 +167,9 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
 
     model = eval(parse(text = function2))
 
-    model %>% compile(loss = "mae", optimizer = "adam")
+    model %>% keras::compile(loss = "mae", optimizer = "adam")
 
-    model %>% fit(x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
+    model %>% keras::fit(x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
     fitted.values <- model %>% predict(x)
   }
 
