@@ -58,4 +58,4 @@ y_pred <- predict(fit,x_val)$predict
 plot(tau_val,y_pred);abline(0,1)
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
+<img src="man/figures/README-example-1.png" width="60%" />
