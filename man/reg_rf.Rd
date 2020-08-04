@@ -37,8 +37,7 @@ a list of components
  }
 }
 \description{
-\code{reg_rf} is robust random forest algorithm based on weighted median
-splitting rule.
+\code{reg_rf} fit robust random forests based on weighted median splitting rule.
 }
 \examples{
 n <- 1000; p <- 3

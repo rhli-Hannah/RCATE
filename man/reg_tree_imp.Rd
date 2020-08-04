@@ -30,8 +30,7 @@ a list of components
  }
 }
 \description{
-\code{reg_tree} is robust regression tree algorithm based on weighted median
-splitting rule.
+\code{reg_tree} fit robust regression tree based on weighted median splitting rule.
 }
 \examples{
 n <- 1000; p <- 3

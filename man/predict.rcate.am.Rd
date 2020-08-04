@@ -2,12 +2,12 @@
 % Please edit documentation in R/predict.R
 \name{predict.rcate.am}
 \alias{predict.rcate.am}
-\title{Predict treatment effect from additive model.}
+\title{Prediction of treatment effect from an \eqn{L_1} b-spline additive regression penalized model}
 \usage{
 \method{predict}{rcate.am}(object, x, ...)
 }
 \arguments{
-\item{object}{"RCATE" object.}
+\item{object}{"rcate.am" object.}
 
 \item{x}{matrix or a data frame of predictors.}
 
@@ -19,10 +19,10 @@ a list of components
  \item predict - the robust estimation result of CATE.
  \item x - matrix of predictors.
  \item algorithm - fitting algorithm.
- \item model - "RCATE" object.
+ \item model - "rcate.am" object.
  \item method - estimation method.
  }
 }
 \description{
-\code{predict} returns the robust treatment effect estimation result.
+\code{predict.rcate.am} Returns predicted treatment effect from "rcate.am" model.
 }

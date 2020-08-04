@@ -2,17 +2,27 @@
 
 #' Robust estimation of treatment effect.
 #'
-#' \code{rcate} returns the robust treatment effect estimation model.
+#' \code{rcate.ml} fit ML algorithm for robust treatment effect estimation.
 #'
-#' This is a generic function:
+#' Fit a GBM or NN to estimate treatment effect estimation that robust to outliers.
 #'
 #' @param x matrix or a data frame of predictors.
 #' @param y vector of response values.
 #' @param d vector of binary treatment assignment (0 or 1).
+#' @param  algorithm character string of algorithm: "GBM" - gradient boosting machine or
+#' "NN" - neural network. The random forests is available in rcate.rf.
 #' @param method character string of CATE estimation method: "MCMEA" - modified covariate
 #' method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.
-#' @param  algorithm character string of algorithm: "GBM" - gradient boosting machine or
-#' "NN" - neural network.
+#' @param n.trees.gbm tuning parameter the number of trees used in GBM for estimating treatment
+#' effect function if algorithm="GBM". The default is 1000.
+#' @param interaction.depth.gbm tuning parameter the number of interactions for estimating treatment
+#' effect function if algorithm="GBM". The default value is 2.
+#' @param n.cells.nn vector of the number of neurals in each hidden layer if algorithm='NN'.
+#' The default is two layers with each layer the half size of previous layer.
+#' @param dropout.nn vector of the dropout rate of each hidden layer if algorithm='NN'.
+#' The default is no dropout.
+#' @param epochs.nn scalar of the number of epochs for neural network if algorithm='NN'.
+#' The defualt is 100.
 #' @param n.trees.p tuning parameter the number of trees used for estimating propensity score
 #' with GBM. the default value is 40000.
 #' @param shrinkage.p tuning parameter the shrinkage level for estimating propensity score
@@ -33,16 +43,6 @@
 #' function with GBM. the default value is 5.
 #' @param cv.mu tuning parameter the folds for cross-validation for estimating mean function with
 #' GBM. The default value is 5.
-#' @param n.trees.gbm tuning parameter the number of trees used in GBM for estimating treatment
-#' effect function if algorithm="GBM". The default is 1000.
-#' @param interaction.depth.gbm tuning parameter the number of interactions for estimating treatment
-#' effect function if algorithm="GBM". The default value is 2.
-#' @param n.cells.nn vector of the number of neurals in each hidden layer if algorithm='NN'.
-#' The default is two layers with each layer the half size of previous layer.
-#' @param dropout.nn vector of the dropout rate of each hidden layer if algorithm='NN'.
-#' The default is no dropout.
-#' @param epochs.nn scalar of the number of epochs for neural network if algorithm='NN'.
-#' The defualt is 100.
 #' @return a list of components
 #' \itemize{
 #'  \item model - the robust estimation model of CATE.

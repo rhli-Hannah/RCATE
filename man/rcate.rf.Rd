@@ -89,10 +89,7 @@ a list of components
  }
 }
 \description{
-\code{rcate.rf} returns the robust treatment effect estimation model.
-}
-\details{
-This is a generic function:
+\code{rcate.rf} return robust estimation of treatment effect using random forests.
 }
 \examples{
 n <- 1000; p <- 10

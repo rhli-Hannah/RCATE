@@ -7,7 +7,7 @@
 \method{predict}{rcate.ml}(object, x, ...)
 }
 \arguments{
-\item{object}{"RCATE" object.}
+\item{object}{"rcate.ml" object.}
 
 \item{x}{matrix or a data frame of predictors.}
 
@@ -19,10 +19,10 @@ a list of components
  \item predict - the robust estimation result of CATE.
  \item x - matrix of predictors.
  \item algorithm - fitting algorithm.
- \item model - "RCATE" object.
+ \item model - "rcate.ml" object.
  \item method - estimation method.
  }
 }
 \description{
-\code{predict} returns the robust treatment effect estimation result.
+\code{predict.rcate.ml} Returns the predicted treatment effect from "rcate.ml" model.
 }

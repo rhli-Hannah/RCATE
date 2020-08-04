@@ -1,8 +1,8 @@
 #' Predict treatment effect from machine learning algorithms.
 #'
-#' \code{predict} returns the robust treatment effect estimation result.
+#' \code{predict.rcate.ml} Returns the predicted treatment effect from "rcate.ml" model.
 #'
-#' @param object "RCATE" object.
+#' @param object "rcate.ml" object.
 #' @param x matrix or a data frame of predictors.
 #' @param ... other.
 #' @return a list of components
@@ -10,7 +10,7 @@
 #'  \item predict - the robust estimation result of CATE.
 #'  \item x - matrix of predictors.
 #'  \item algorithm - fitting algorithm.
-#'  \item model - "RCATE" object.
+#'  \item model - "rcate.ml" object.
 #'  \item method - estimation method.
 #'  }
 #' @rdname predict.rcate.ml
@@ -29,11 +29,11 @@ predict.rcate.ml <- function(object, x, ...) {
               model = model, method = object$method))
 }
 
-#' Predict treatment effect from additive model.
+#' Prediction of treatment effect from an \eqn{L_1} b-spline additive regression penalized model
 #'
-#' \code{predict} returns the robust treatment effect estimation result.
+#' \code{predict.rcate.am} Returns predicted treatment effect from "rcate.am" model.
 #'
-#' @param object "RCATE" object.
+#' @param object "rcate.am" object.
 #' @param x matrix or a data frame of predictors.
 #' @param ... other.
 #' @return a list of components
@@ -41,7 +41,7 @@ predict.rcate.ml <- function(object, x, ...) {
 #'  \item predict - the robust estimation result of CATE.
 #'  \item x - matrix of predictors.
 #'  \item algorithm - fitting algorithm.
-#'  \item model - "RCATE" object.
+#'  \item model - "rcate.am" object.
 #'  \item method - estimation method.
 #'  }
 #' @rdname predict.rcate.am

@@ -102,9 +102,9 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 
 #' Robust estimation of treatment effect using additive b-spline model.
 #'
-#' \code{rcate.am} returns the robust treatment effect estimation model.
+#' \code{rcate.am} fit additive model for robust treatment effect estimation.
 #'
-#' This is a generic function:
+#' Fits a \eqn{L_1} additive regression model with the group SCAD penalty.
 #'
 #' @param x matrix or a data frame of predictors.
 #' @param y vector of response values.

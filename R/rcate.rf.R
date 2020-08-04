@@ -13,8 +13,7 @@ wmed_var <- function(x, y, weight) {
 
 #' Robust regression tree.
 #'
-#' \code{reg_tree} is robust regression tree algorithm based on weighted median
-#' splitting rule.
+#' \code{reg_tree} fit robust regression tree based on weighted median splitting rule.
 #'
 #' @param formula an object of class "formula".
 #' @param data a training data frame.
@@ -200,8 +199,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 
 #' Robust random forests.
 #'
-#' \code{reg_rf} is robust random forest algorithm based on weighted median
-#' splitting rule.
+#' \code{reg_rf} fit robust random forests based on weighted median splitting rule.
 #'
 #' @param formula an object of class "formula".
 #' @param n_trees number of trees. Default is 50.
@@ -298,17 +296,23 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 
 #' Robust estimation of treatment effect using random forests.
 #'
-#' \code{rcate.rf} returns the robust treatment effect estimation model.
-#'
-#' This is a generic function:
+#' \code{rcate.rf} return robust estimation of treatment effect using random forests.
 #'
 #' @param x matrix or a data frame of predictors.
 #' @param y vector of response values.
 #' @param d vector of binary treatment assignment (0 or 1).
-#' @param method character string of CATE estimation method: "MCMEA" - modified covariate
-#' method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.
 #' @param  algorithm character string of algorithm: "GBM" - gradient boosting machine or
 #' "NN" - neural network.
+#' @param method character string of CATE estimation method: "MCMEA" - modified covariate
+#' method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.
+#' @param n.trees.rf tuning parameter the number of trees used in GBM for estimating treatment
+#' effect function if algorithm="GBM". The default is 1000.
+#' @param feature.frac tuning parameter the number of interactions for estimating treatment
+#' effect function if algorithm="GBM". The default value is 2.
+#' @param newdata vector of the number of neurals in each hidden layer if algorithm='NN'.
+#' The default is two layers with each layer the half size of previous layer.
+#' @param minnodes vector of the dropout rate of each hidden layer if algorithm='NN'.
+#' The default is no dropout.
 #' @param n.trees.p tuning parameter the number of trees used for estimating propensity score
 #' with GBM. the default value is 40000.
 #' @param shrinkage.p tuning parameter the shrinkage level for estimating propensity score
@@ -329,14 +333,6 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #' function with GBM. the default value is 5.
 #' @param cv.mu tuning parameter the folds for cross-validation for estimating mean function with
 #' GBM. The default value is 5.
-#' @param n.trees.rf tuning parameter the number of trees used in GBM for estimating treatment
-#' effect function if algorithm="GBM". The default is 1000.
-#' @param feature.frac tuning parameter the number of interactions for estimating treatment
-#' effect function if algorithm="GBM". The default value is 2.
-#' @param newdata vector of the number of neurals in each hidden layer if algorithm='NN'.
-#' The default is two layers with each layer the half size of previous layer.
-#' @param minnodes vector of the dropout rate of each hidden layer if algorithm='NN'.
-#' The default is no dropout.
 #' @return a list of components
 #' \itemize{
 #'  \item fit - estimation method.

@@ -38,7 +38,7 @@ rcate.ml(
 method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.}
 
 \item{algorithm}{character string of algorithm: "GBM" - gradient boosting machine or
-"NN" - neural network.}
+"NN" - neural network. The random forests is available in rcate.rf.}
 
 \item{n.trees.p}{tuning parameter the number of trees used for estimating propensity score
 with GBM. the default value is 40000.}
@@ -99,10 +99,10 @@ a list of components
  }
 }
 \description{
-\code{rcate} returns the robust treatment effect estimation model.
+\code{rcate.ml} fit ML algorithm for robust treatment effect estimation.
 }
 \details{
-This is a generic function:
+Fit a GBM or NN to estimate treatment effect estimation that robust to outliers.
 }
 \examples{
 n <- 1000; p <- 10

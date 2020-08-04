@@ -96,10 +96,10 @@ a list of components
  }
 }
 \description{
-\code{rcate.am} returns the robust treatment effect estimation model.
+\code{rcate.am} fit additive model for robust treatment effect estimation.
 }
 \details{
-This is a generic function:
+Fits a \eqn{L_1} additive regression model with the group SCAD penalty.
 }
 \examples{
 n <- 1000; p <- 10
