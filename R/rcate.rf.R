@@ -303,7 +303,7 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #' @param d vector of binary treatment assignment (0 or 1).
 #' @param  algorithm character string of algorithm: "GBM" - gradient boosting machine or
 #' "NN" - neural network.
-#' @param method character string of CATE estimation method: "MCMEA" - modified covariate
+#' @param method character string of CATE estimation method: "MCMEA" - modified co-variate
 #' method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.
 #' @param n.trees.rf tuning parameter the number of trees used in GBM for estimating treatment
 #' effect function if algorithm="GBM". The default is 1000.

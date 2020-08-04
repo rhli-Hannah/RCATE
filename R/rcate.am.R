@@ -109,9 +109,9 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #' @param x matrix or a data frame of predictors.
 #' @param y vector of response values.
 #' @param d vector of binary treatment assignment (0 or 1).
-#' @param method character string of CATE estimation method: "MCMEA" - modified covariate
+#' @param method character string of CATE estimation method: "MCMEA" - modified co-variate
 #' method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.
-#' @param  NIS logical of using non-parametric independice screening or not. The default is TRUE
+#' @param  NIS logical of using non-parametric independent screening or not. The default is TRUE
 #' when \eqn{p < n/log(n)}.
 #' @param  nknots number of knots for cubic spline. The default is \eqn{floor(sqrt(n)/2)}.
 #' @param  lambda.smooth scalar represent the smoothness penalty lambda2. The default is 2.

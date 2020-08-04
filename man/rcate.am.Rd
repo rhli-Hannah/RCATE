@@ -33,10 +33,10 @@ rcate.am(
 
 \item{d}{vector of binary treatment assignment (0 or 1).}
 
-\item{method}{character string of CATE estimation method: "MCMEA" - modified covariate
+\item{method}{character string of CATE estimation method: "MCMEA" - modified co-variate
 method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.}
 
-\item{NIS}{logical of using non-parametric independice screening or not. The default is TRUE
+\item{NIS}{logical of using non-parametric independent screening or not. The default is TRUE
 when \eqn{p < n/log(n)}.}
 
 \item{nknots}{number of knots for cubic spline. The default is \eqn{floor(sqrt(n)/2)}.}

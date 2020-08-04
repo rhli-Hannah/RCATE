@@ -19,8 +19,7 @@ Imports:
         rqPen,
         keras,
         tensorflow,
-        e1071,
-        qpdf
+        e1071
 RoxygenNote: 7.1.0
 BuildVignettes: true
 Suggests: 

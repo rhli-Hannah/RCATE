@@ -16,7 +16,7 @@
 \value{
 a list of components
 \itemize{
- \item predict - the robust estimation result of CATE.
+ \item predict - a robust estimation result of CATE.
  \item x - matrix of predictors.
  \item algorithm - fitting algorithm.
  \item model - "rcate.am" object.

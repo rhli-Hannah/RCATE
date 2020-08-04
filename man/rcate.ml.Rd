@@ -34,7 +34,7 @@ rcate.ml(
 
 \item{d}{vector of binary treatment assignment (0 or 1).}
 
-\item{method}{character string of CATE estimation method: "MCMEA" - modified covariate
+\item{method}{character string of CATE estimation method: "MCMEA" - modified co-variate
 method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.}
 
 \item{algorithm}{character string of algorithm: "GBM" - gradient boosting machine or
