@@ -22,7 +22,8 @@ predict.rcate.ml <- function(object, x, ...) {
     if (algorithm == "GBM") {
       predict <- predict(model, data.frame(x), n.trees = object$n.trees.gbm)
     } else if (algorithm == "NN") {
-      predict <- model %>% predict(x)
+      predict <- rowMeans(predict(model,x))
+      model <- NULL
     }
 
   return(list(predict = predict, x = x, algorithm = object$algorithm,

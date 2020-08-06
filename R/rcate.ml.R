@@ -55,14 +55,14 @@
 #'  \item n.trees.gbm - number of trees for estimating treatment effect function if algorithm='GBM'.
 #'  }
 #' @examples
-#' n <- 1000; p <- 5
+#' n <- 1000; p <- 10
 #' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
 #' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]+9*tanh(0.5*X[,4])+3*X[,5]*(2*I(X[,4]<1)-1)
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
 #' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
-#' x_val = matrix(rnorm(200*5,0,1),nrow=200,ncol=5)
+#' x_val = matrix(rnorm(200*5,0,1),nrow=200,ncol=10)
 #' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
 #' 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 #' # Use MCM-EA transformation and GBM to estimate CATE
@@ -155,22 +155,59 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
     x = as.matrix(x)
     y = as.matrix(y.tr)
 
-    function0 <- paste0("layer_dense(units=", n.cells.nn[1],
-                        ", activation='relu',input_shape=ncol(x)) %>% layer_dropout(",
-                        dropout.nn[1], ") %>%")
-    function1 <- paste0("layer_dense(units=", n.cells.nn[2:length(n.cells.nn)],
-                        ", activation='relu') %>% layer_dropout(",
-                        dropout.nn[2:length(dropout.nn)], ") %>%")
-    function2 <- paste0("keras_model_sequential() %>% ", function0,
-                        do.call(paste, c(as.list(function1), sep = "")),
-                        "layer_dense(units=1, activation='linear')")
+    # function0 <- paste0("layer_dense(units=", n.cells.nn[1],
+    #                     ", activation='relu',input_shape=ncol(x)) %>% layer_dropout(",
+    #                     dropout.nn[1], ") %>%")
+    # function1 <- paste0("layer_dense(units=", n.cells.nn[2:length(n.cells.nn)],
+    #                     ", activation='relu') %>% layer_dropout(",
+    #                     dropout.nn[2:length(dropout.nn)], ") %>%")
+    # function2 <- paste0("keras_model_sequential() %>% ", function0,
+    #                     do.call(paste, c(as.list(function1), sep = "")),
+    #                     "layer_dense(units=1, activation='linear')")
+    #
+    # model = eval(parse(text = function2))
+    #
+    # model %>% keras::compile(loss = "mae", optimizer = "adam")
+    #
+    # model %>% keras::fit(x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
+    # fitted.values <- model %>% predict(x)
 
-    model = eval(parse(text = function2))
+    keras_model_simple_mlp <- function(use_bn = FALSE, use_dp = FALSE,
+                                       name = NULL) {
 
-    model %>% keras::compile(loss = "mae", optimizer = "adam")
+      # define and return a custom model
+      keras::keras_model_custom(name = name, function(self) {
 
-    model %>% keras::fit(x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
-    fitted.values <- model %>% predict(x)
+        # create layers we'll need for the call (this code executes once)
+        self$dense1 <- keras::layer_dense(units = n.cells.nn[1], activation = "relu")
+        self$dense1.1 <- keras::layer_dense(units = n.cells.nn[1], activation = "relu")
+        self$dense1.5 <- keras::layer_dropout(rate = 0.5)
+        self$dense2 <- keras::layer_dense(units = n.cells.nn[2:length(n.cells.nn)], activation = "relu")
+        self$dense2.5 <- keras::layer_dropout(rate = 0.5)
+        self$dense3 <- keras::layer_dense(units = 1, activation = "linear")
+
+        if (use_dp)
+          self$dp <- keras::layer_dropout(rate = 0.5)
+        if (use_bn)
+          self$bn <- keras::layer_batch_normalization(axis = -1)
+
+        # implement call (this code executes during training & inference)
+        function(inputs, mask = NULL) {
+          x <- self$dense1(inputs)
+          if (use_dp)
+            x <- self$dp(x)
+          if (use_bn)
+            x <- self$bn(x)
+          self$dense3(x)
+        }
+      })
+    }
+
+    model <- keras_model_simple_mlp()
+    keras::compile(model, loss = "mae", optimizer = "adam")
+    keras::fit(model,x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
+
+    fitted.values <- rowMeans(predict.engine.training.Model(model,x))
   }
 
   result <- list(model = model, method = method, algorithm = algorithm,
