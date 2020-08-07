@@ -53,8 +53,31 @@ x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
 tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 # Use L1 R-learning and GBM to estimate CATE
-fit <- rcate.ml(X,y,d,method='RL')
+fit <- rcate.ml(X,y,d,method='RL',algorithm='GBM')
 y_pred <- predict(fit,x_val)$predict
+plot(tau_val,y_pred);abline(0,1)
+
+# Use L1 doubly robust method and neural network to estimate CATE
+fit <- rcate.ml(X,y,d,method='DR',algorithm='NN')
+ 
+# Use L1 doubly robust method and random forests to estimate CATE
+fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR')
+y_pred <- fit$pred
+plot(tau_val,y_pred);abline(0,1)
+
+# Use L1 MCM-EA and additive model to estimate CATE
+n <- 1000; p <- 2
+X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
+tau = 6*sin(2*X[,1])+3*(X[,2])
+p = 1/(1+exp(-X[,1]+X[,2]))
+d = rbinom(n,1,p)
+t = 2*d-1
+y = 100+4*X[,1]+tau*t/2 + rnorm(n,0,1)
+x_val = matrix(rnorm(200*2,0,1),nrow=200,ncol=2)
+tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])
+
+fit <- rcate.am(X,y,d)
+y_pred <- predict(fit,x_val)$pred
 plot(tau_val,y_pred);abline(0,1)
 ```
 
