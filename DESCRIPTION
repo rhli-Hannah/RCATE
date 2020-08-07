@@ -1,7 +1,7 @@
 Package: RCATE
 Type: Package
 Title: Robust Estimation of Heterogeneous Treatment Effect
-Version: 0.1.1
+Version: 0.1.0
 Author: Ruohong Li, Wanzhu Tu, Honglang Wang
 Maintainer: Ruohong Li <rhli@iu.edu>
 Description: Contains a variety of methods to generate typical conditional average treatment effect estimates 
