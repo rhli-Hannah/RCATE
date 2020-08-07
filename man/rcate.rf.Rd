@@ -104,7 +104,7 @@ tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 
 # Use MCM-EA transformation and GBM to estimate CATE
-fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='RL')
+fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR')
 y_pred <- fit$pred
 plot(tau_val,y_pred);abline(0,1)
 }

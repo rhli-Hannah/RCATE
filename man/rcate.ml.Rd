@@ -119,4 +119,6 @@ tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
 fit <- rcate.ml(X,y,d,method='RL')
 y_pred <- predict(fit,x_val)$predict
 plot(tau_val,y_pred);abline(0,1)
+
+fit <- rcate.ml(X,y,d,method='DR',algorithm='NN')
 }

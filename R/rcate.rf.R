@@ -218,7 +218,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 #' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 #' y = 1+sin(X[,1]) + rnorm(n,0,0.5)
 #' df <- data.frame(y,X)
-#' RF <- reg_rf(y~X1+X2+X3,data=df,newdata=df,weights=rep(1,1000))
+#' RF <- reg_rf(y~X1+X2+X3,data=df,newdata=df,weights=rep(1,1000),n_trees=5)
 #' y_pred <- RF$pred
 #' plot(y,y_pred)
 #' @export
@@ -351,7 +351,7 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #' 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 #'
 #' # Use MCM-EA transformation and GBM to estimate CATE
-#' fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='RL')
+#' fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR')
 #' y_pred <- fit$pred
 #' plot(tau_val,y_pred);abline(0,1)
 #' @export

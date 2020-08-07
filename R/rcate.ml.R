@@ -1,5 +1,6 @@
 #library(MASS);library(gbm);library(caret);library(plyr);library(dplyr);library(randomForest);library(rmutil);library(keras);library(tensorflow)
 
+
 #' Robust estimation of treatment effect.
 #'
 #' \code{rcate.ml} fit ML algorithm for robust treatment effect estimation.
@@ -69,6 +70,9 @@
 #' fit <- rcate.ml(X,y,d,method='RL')
 #' y_pred <- predict(fit,x_val)$predict
 #' plot(tau_val,y_pred);abline(0,1)
+#'
+#' fit <- rcate.ml(X,y,d,method='DR',algorithm='NN')
+#' @importFrom stats predict
 #' @export
 rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                   n.trees.p = 40000, shrinkage.p = 0.005, n.minobsinnode.p = 10,
@@ -207,7 +211,7 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
     keras::compile(model, loss = "mae", optimizer = "adam")
     keras::fit(model,x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
 
-    fitted.values <- rowMeans(predict.engine.training.Model(model,x))
+    fitted.values <- rowMeans(predict(model,x))
   }
 
   result <- list(model = model, method = method, algorithm = algorithm,

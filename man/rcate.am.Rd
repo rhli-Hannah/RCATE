@@ -102,15 +102,15 @@ a list of components
 Fits a \eqn{L_1} additive regression model with the group SCAD penalty.
 }
 \examples{
-n <- 1000; p <- 5
+n <- 1000; p <- 2
 X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
-tau = 6*sin(2*X[,1])+3*(X[,2])+X[,3]+9*tanh(0.5*X[,4])+3*X[,5]
+tau = 6*sin(2*X[,1])+3*(X[,2])
 p = 1/(1+exp(-X[,1]+X[,2]))
 d = rbinom(n,1,p)
 t = 2*d-1
-y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
-x_val = matrix(rnorm(200*5,0,1),nrow=200,ncol=5)
-tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])+x_val[,3]+9*tanh(0.5*x_val[,4])+3*x_val[,5]
+y = 100+4*X[,1]+tau*t/2 + rnorm(n,0,1)
+x_val = matrix(rnorm(200*2,0,1),nrow=200,ncol=2)
+tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])
 
 fit <- rcate.am(X,y,d)
 y_pred <- predict(fit,x_val)$pred

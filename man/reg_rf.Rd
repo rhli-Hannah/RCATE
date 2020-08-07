@@ -44,7 +44,7 @@ n <- 1000; p <- 3
 X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 y = 1+sin(X[,1]) + rnorm(n,0,0.5)
 df <- data.frame(y,X)
-RF <- reg_rf(y~X1+X2+X3,data=df,newdata=df,weights=rep(1,1000))
+RF <- reg_rf(y~X1+X2+X3,data=df,newdata=df,weights=rep(1,1000),n_trees=5)
 y_pred <- RF$pred
 plot(y,y_pred)
 }
