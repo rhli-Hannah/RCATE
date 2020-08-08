@@ -110,7 +110,7 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #' @param y vector of response values.
 #' @param d vector of binary treatment assignment (0 or 1).
 #' @param method character string of CATE estimation method: "MCMEA" - modified co-variate
-#' method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.
+#' method with efficiency augmentation or "RL" - R-learning.
 #' @param  NIS logical of using non-parametric independent screening or not. The default is TRUE
 #' when \eqn{p < n/log(n)}.
 #' @param  nknots number of knots for cubic spline. The default is \eqn{floor(sqrt(n)/2)}.
@@ -154,19 +154,20 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #'  \item nknots - number of knots of cubic spline.
 #'  }
 #' @examples
-#' n <- 1000; p <- 3; set.seed(2222)
+#' n <- 1000; p <- 2; set.seed(2223)
 #' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
-#' tau = 6*sin(2*X[,1])+3*(X[,2])
+#' tau = 3*X[,1]-X[,2]
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
-#' y = 100+4*X[,1]+tau*t/2 + rnorm(n,0,1); set.seed(2223)
-#' x_val = matrix(rnorm(200*3,0,1),nrow=200,ncol=3)
-#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])
+#' y = 100+tau*t/2 + rnorm(n,0,1); set.seed(2223)
+#' x_val = matrix(rnorm(200*2,0,1),nrow=200,ncol=2)
+#' tau_val = 3*x_val[,1]-x_val[,2]
 #'
-#' fit <- rcate.am(X,y,d)
+#' fit <- rcate.am(X,y,d,lambda.smooth = 2, method = 'RL')
 #' y_pred <- predict(fit,x_val)$pred
 #' plot(tau_val,y_pred);abline(0,1)
+#'
 #' @export
 rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
                      lambda.smooth = 1, nlambda = 30, nfolds = 5, n.trees.p = 40000,
@@ -224,8 +225,8 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
 
   data00 <- data.frame(cbind(y, x, d))
   colnames(data00) <- c("y", paste0("X", 1:ncol(x)), "d")
-  data020 <- data00[data00$d == 0, ]
-  data021 <- data00[data00$d == 1, ]
+  # data020 <- data00[data00$d == 0, ]
+  # data021 <- data00[data00$d == 1, ]
 
   gbmGrid.mu <- expand.grid(interaction.depth = interaction.depth.mu,
                             n.trees = n.trees.mu, shrinkage = shrinkage.mu,
@@ -233,15 +234,15 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
   gbmFit.mu <- caret::train(y ~ ., data = data00[, -ncol(data00)],
                             method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
                             number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
-  gbmFit.mu1 <- caret::train(y ~ ., data = data021[, -ncol(data021)],
-                             method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
-                             number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
-  gbmFit.mu0 <- caret::train(y ~ ., data = data020[, -ncol(data020)],
-                             method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
-                             number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
-
-  mu0 <- caret::predict.train(gbmFit.mu0, newdata = data00)
-  mu1 <- caret::predict.train(gbmFit.mu1, newdata = data00)
+  # gbmFit.mu1 <- caret::train(y ~ ., data = data021[, -ncol(data021)],
+  #                            method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
+  #                            number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
+  # gbmFit.mu0 <- caret::train(y ~ ., data = data020[, -ncol(data020)],
+  #                            method = "gbm", verbose = FALSE, trControl = caret::trainControl(method = "cv",
+  #                            number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
+  #
+  # mu0 <- caret::predict.train(gbmFit.mu0, newdata = data00)
+  # mu1 <- caret::predict.train(gbmFit.mu1, newdata = data00)
   mu.ea <- caret::predict.train(gbmFit.mu, newdata = data00)
 
   # Do transformation
@@ -258,15 +259,6 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
     y.tr <- (y - mu.ea) * w.tr
     wmat.tr <- matrix(0, row, row)
     diag(wmat.tr) <- w.tr * (t - 2 * pscore.hat + 1)/2
-
-    Btilde <- B_R(x.tr, x.tr, lambda.smooth, nknots, colnum)
-    x.tr1 <- wmat.tr %*% cbind(rep(1, row), Btilde)
-  } else if (method == "DR") {
-    y.tr <- (t - 2 * pscore.hat + 1) * (y)/(2 * pscore.hat * (1 - pscore.hat)) +
-      (pscore.hat - d)/pscore.hat * mu1 + (pscore.hat - d)/(1 - pscore.hat) * mu0
-    w.tr <- abs((t - 2 * pscore.hat + 1)/(2 * pscore.hat * (1 - pscore.hat)))
-    wmat.tr <- matrix(0, row, row)
-    diag(wmat.tr) <- w.tr
 
     Btilde <- B_R(x.tr, x.tr, lambda.smooth, nknots, colnum)
     x.tr1 <- wmat.tr %*% cbind(rep(1, row), Btilde)

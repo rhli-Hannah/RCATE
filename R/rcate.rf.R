@@ -337,16 +337,15 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #'  \item pred - prediction of newdata.
 #'  }
 #' @examples
-#' n <- 1000; p <- 5
-#' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p); set.seed(2222)
-#' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]+9*tanh(0.5*X[,4])+3*X[,5]*(2*I(X[,4]<1)-1)
+#' n <- 1000; p <- 3
+#' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p); set.seed(2223)
+#' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
 #' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1); set.seed(2223)
-#' x_val = matrix(rnorm(200*5,0,1),nrow=200,ncol=5)
-#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
-#' 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
+#' x_val = matrix(rnorm(200*3,0,1),nrow=200,ncol=3)
+#' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]
 #'
 #' # Use MCM-EA transformation and GBM to estimate CATE
 #' fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR',feature.frac = 0.8, minnodes = 5)
