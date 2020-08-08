@@ -9,7 +9,6 @@ rcate.rf(
   y,
   d,
   method = "MCMEA",
-  algorithm = "GBM",
   n.trees.p = 40000,
   shrinkage.p = 0.005,
   n.minobsinnode.p = 10,
@@ -21,7 +20,7 @@ rcate.rf(
   interaction.depth.mu = 5,
   cv.mu = 5,
   n.trees.rf = 50,
-  feature.frac = 1/2,
+  feature.frac = 0.8,
   newdata = NULL,
   minnodes = 5
 )
@@ -35,9 +34,6 @@ rcate.rf(
 
 \item{method}{character string of CATE estimation method: "MCMEA" - modified co-variate
 method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.}
-
-\item{algorithm}{character string of algorithm: "GBM" - gradient boosting machine or
-"NN" - neural network.}
 
 \item{n.trees.p}{tuning parameter the number of trees used for estimating propensity score
 with GBM. the default value is 40000.}
@@ -92,19 +88,18 @@ a list of components
 \code{rcate.rf} return robust estimation of treatment effect using random forests.
 }
 \examples{
-n <- 1000; p <- 10
-X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
-tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]+9*tanh(0.5*X[,4])+3*X[,5]*(2*I(X[,4]<1)-1)
+n <- 1000; p <- 3
+X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p); set.seed(2223)
+tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 p = 1/(1+exp(-X[,1]+X[,2]))
 d = rbinom(n,1,p)
 t = 2*d-1
-y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
-x_val = matrix(rnorm(200*10,0,1),nrow=200,ncol=10)
-tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
-3*x_val[,5]*(2*I(x_val[,4]<1)-1)
+y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1); set.seed(2223)
+x_val = matrix(rnorm(200*3,0,1),nrow=200,ncol=3)
+tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]
 
 # Use MCM-EA transformation and GBM to estimate CATE
-fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR')
+fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR',feature.frac = 0.8, minnodes = 5)
 y_pred <- fit$pred
 plot(tau_val,y_pred);abline(0,1)
 }

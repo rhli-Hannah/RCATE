@@ -175,6 +175,8 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
                      interaction.depth.p = 1, cv.p = 2, n.trees.mu = c(1:50) * 50,
                      shrinkage.mu = 0.01,
                      n.minobsinnode.mu = 5, interaction.depth.mu = 5, cv.mu = 5) {
+  options(warn=-1)
+
   # Calculate T=2D-1
   t <- 2 * d - 1
   if (is.vector(x)) {

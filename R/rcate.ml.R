@@ -81,6 +81,8 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                   interaction.depth.mu = 5, cv.mu = 5, n.trees.gbm = 1000,
                   interaction.depth.gbm = 2, n.cells.nn = NA, dropout.nn = NA,
                   epochs.nn = 100) {
+  options(warn=-1)
+
   # Calculate T=2D-1
   t <- 2 * d - 1
 

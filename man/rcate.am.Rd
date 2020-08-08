@@ -11,7 +11,7 @@ rcate.am(
   method = "MCMEA",
   NIS = TRUE,
   nknots = NA,
-  lambda.smooth = 2,
+  lambda.smooth = 1,
   nlambda = 30,
   nfolds = 5,
   n.trees.p = 40000,
@@ -34,7 +34,7 @@ rcate.am(
 \item{d}{vector of binary treatment assignment (0 or 1).}
 
 \item{method}{character string of CATE estimation method: "MCMEA" - modified co-variate
-method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.}
+method with efficiency augmentation or "RL" - R-learning.}
 
 \item{NIS}{logical of using non-parametric independent screening or not. The default is TRUE
 when \eqn{p < n/log(n)}.}
@@ -102,17 +102,18 @@ a list of components
 Fits a \eqn{L_1} additive regression model with the group SCAD penalty.
 }
 \examples{
-n <- 1000; p <- 2
+n <- 1000; p <- 2; set.seed(2223)
 X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
-tau = 6*sin(2*X[,1])+3*(X[,2])
+tau = 3*X[,1]-X[,2]
 p = 1/(1+exp(-X[,1]+X[,2]))
 d = rbinom(n,1,p)
 t = 2*d-1
-y = 100+4*X[,1]+tau*t/2 + rnorm(n,0,1)
+y = 100+tau*t/2 + rnorm(n,0,1); set.seed(2223)
 x_val = matrix(rnorm(200*2,0,1),nrow=200,ncol=2)
-tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])
+tau_val = 3*x_val[,1]-x_val[,2]
 
-fit <- rcate.am(X,y,d)
+fit <- rcate.am(X,y,d,lambda.smooth = 2, method = 'RL')
 y_pred <- predict(fit,x_val)$pred
 plot(tau_val,y_pred);abline(0,1)
+
 }
