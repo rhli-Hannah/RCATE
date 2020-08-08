@@ -56,14 +56,14 @@
 #'  \item n.trees.gbm - number of trees for estimating treatment effect function if algorithm='GBM'.
 #'  }
 #' @examples
-#' n <- 1000; p <- 10
+#' n <- 1000; p <- 5; set.seed(2222)
 #' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
 #' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]+9*tanh(0.5*X[,4])+3*X[,5]*(2*I(X[,4]<1)-1)
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
-#' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1)
-#' x_val = matrix(rnorm(200*5,0,1),nrow=200,ncol=10)
+#' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1); set.seed(2223)
+#' x_val = matrix(rnorm(200*5,0,1),nrow=200,ncol=5)
 #' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]+9*tanh(0.5*x_val[,4])+
 #' 3*x_val[,5]*(2*I(x_val[,4]<1)-1)
 #' # Use R-learning method and GBM to estimate CATE
@@ -72,7 +72,7 @@
 #' plot(tau_val,y_pred);abline(0,1)
 #'
 #' # Use doubly robust method and neural network to estimate CATE
-#' fit <- rcate.ml(X,y,d,method='DR',algorithm='NN')
+#' fit <- rcate.ml(X,y,d,method='DR',algorithm='NN',dropout.nn=c(0,0))
 #' @importFrom stats predict
 #' @export
 rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
@@ -92,7 +92,7 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
 
   # Generate the dropout rate of NN
   if (is.na(dropout.nn)) {
-    dropout.nn <- c(0.5, 0.5)
+    dropout.nn <- c(0.5)
   }
 
   # Estimate mu0(x), mu1(x) and p(x)
@@ -186,9 +186,9 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
         # create layers we'll need for the call (this code executes once)
         self$dense1 <- keras::layer_dense(units = n.cells.nn[1], activation = "relu")
         self$dense1.1 <- keras::layer_dense(units = n.cells.nn[1], activation = "relu")
-        self$dense1.5 <- keras::layer_dropout(rate = 0.5)
+        self$dense1.5 <- keras::layer_dropout(rate = dropout.nn[1])
         self$dense2 <- keras::layer_dense(units = n.cells.nn[2:length(n.cells.nn)], activation = "relu")
-        self$dense2.5 <- keras::layer_dropout(rate = 0.5)
+        #self$dense2.5 <- keras::layer_dropout(rate = dropout.nn[2])
         self$dense3 <- keras::layer_dense(units = 1, activation = "linear")
 
         if (use_dp)

@@ -154,14 +154,14 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #'  \item nknots - number of knots of cubic spline.
 #'  }
 #' @examples
-#' n <- 1000; p <- 2
+#' n <- 1000; p <- 3; set.seed(2222)
 #' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
 #' tau = 6*sin(2*X[,1])+3*(X[,2])
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
-#' y = 100+4*X[,1]+tau*t/2 + rnorm(n,0,1)
-#' x_val = matrix(rnorm(200*2,0,1),nrow=200,ncol=2)
+#' y = 100+4*X[,1]+tau*t/2 + rnorm(n,0,1); set.seed(2223)
+#' x_val = matrix(rnorm(200*3,0,1),nrow=200,ncol=3)
 #' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2])
 #'
 #' fit <- rcate.am(X,y,d)
@@ -169,7 +169,7 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
-                     lambda.smooth = 2, nlambda = 30, nfolds = 5, n.trees.p = 40000,
+                     lambda.smooth = 1, nlambda = 30, nfolds = 5, n.trees.p = 40000,
                      shrinkage.p = 0.005, n.minobsinnode.p = 10,
                      interaction.depth.p = 1, cv.p = 2, n.trees.mu = c(1:50) * 50,
                      shrinkage.mu = 0.01,
