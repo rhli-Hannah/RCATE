@@ -255,16 +255,21 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
     x.tr1 <- wmat.tr %*% cbind(rep(1, row), Btilde)
   } else if (method == "RL") {
     w.tr <- 1
-    y.tr <- (y_tr - mu.ea) * w.tr
+    y.tr <- (y - mu.ea) * w.tr
     wmat.tr <- matrix(0, row, row)
     diag(wmat.tr) <- w.tr * (t - 2 * pscore.hat + 1)/2
 
-    Btilde <- B_R(x.tr, x.tr, lambda2, nknots, colnum)
+    Btilde <- B_R(x.tr, x.tr, lambda.smooth, nknots, colnum)
     x.tr1 <- wmat.tr %*% cbind(rep(1, row), Btilde)
   } else if (method == "DR") {
     y.tr <- (t - 2 * pscore.hat + 1) * (y)/(2 * pscore.hat * (1 - pscore.hat)) +
       (pscore.hat - d)/pscore.hat * mu1 + (pscore.hat - d)/(1 - pscore.hat) * mu0
     w.tr <- abs((t - 2 * pscore.hat + 1)/(2 * pscore.hat * (1 - pscore.hat)))
+    wmat.tr <- matrix(0, row, row)
+    diag(wmat.tr) <- w.tr
+
+    Btilde <- B_R(x.tr, x.tr, lambda.smooth, nknots, colnum)
+    x.tr1 <- wmat.tr %*% cbind(rep(1, row), Btilde)
   }
 
   # Fit the weighted LAD model with group SCAD
