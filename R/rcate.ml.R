@@ -157,6 +157,10 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
     df.x <- data.frame(x)
     colnames(df.x) <- paste0("X", 1:ncol(x))
     fitted.values <- gbm::predict.gbm(model, df.x, n.trees = n.trees.gbm)
+
+    history <- gbm.perf(model,method = 'OOB', oobag.curve = TRUE,plot.it = FALSE)
+
+    importance <- gbm::relative.influence(model)
   } else if (algorithm == "NN") {
     x = as.matrix(x)
     y = as.matrix(y.tr)
@@ -211,14 +215,30 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
 
     model <- keras_model_simple_mlp()
     keras::compile(model, loss = "mae", optimizer = "adam")
-    keras::fit(model,x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
+    history <- keras::fit(model,x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
 
     fitted.values <- rowMeans(predict(model,x))
+
+    pred_wrapper <- function(object, newdata) {
+      predict(object, x = as.matrix(newdata)) %>%
+      as.vector()
+    }
+    p1 <- vip::vip(
+      object = model,                     # fitted model
+      method = "permute",                 # permutation-based VI scores
+      num_features = ncol(train_x),       # default only plots top 10 features
+      pred_fun = pred_wrapper,            # user-defined prediction function
+      train = as.data.frame(train_x) ,    # training data
+      target = train_y,                   # response values used for training
+      metric = "rsquared",                # evaluation metric
+      # progress = "text"                 # request a text-based progress bar
+    )
+    importance <- p1$data
   }
 
   result <- list(model = model, method = method, algorithm = algorithm,
                  fitted.values = fitted.values, x = x, y = y, d = d,
-                 n.trees.gbm = n.trees.gbm)
+                 n.trees.gbm = n.trees.gbm, history = history, importance = importance)
   class(result) <- "rcate.ml"
   return(result)
 }

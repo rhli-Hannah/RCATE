@@ -37,7 +37,7 @@ wmed_var <- function(x, y, weight) {
 #' df <- data.frame(y,X)
 #' tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,newdata=df,weights=rep(1,1000))
 #' y_pred <- tree$pred
-#' plot(y,y_pred)
+#' plot(y,y_pred);abline(0,1)
 #' @export
 reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 
@@ -79,8 +79,6 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
                 # get the design matrix
                 X <- stats::model.matrix(formula, this_data)
                 weight <- weights[as.numeric(row.names(X))]
-                # print(X)
-                # print(weight)
             } else {
                 this_data <- data
             }
@@ -281,17 +279,17 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
     rf_fit <- apply(fits, MARGIN = 1, mean, na.rm = TRUE)
     rf_pred <- apply(preds, MARGIN = 1, mean, na.rm = TRUE)
 
-    # # extract the feature importance
-    # imp_full <- do.call("rbind", trees[, 2])
-    #
-    # # build the mean feature importance between all trees
-    # imp <- aggregate(IMPORTANCE ~ FEATURES, FUN = mean, imp_full)
-    #
-    # # build the ratio for interpretation purposes
-    # imp$IMPORTANCE <- imp$IMPORTANCE / sum(imp$IMPORTANCE)
+    # extract the feature importance
+    imp_full <- do.call("rbind", trees[, 2])
+
+    # build the mean feature importance between all trees
+    imp <- aggregate(IMPORTANCE ~ FEATURES, FUN = mean, imp_full)
+
+    # build the ratio for interpretation purposes
+    imp$IMPORTANCE <- imp$IMPORTANCE / sum(imp$IMPORTANCE)
 
     # export
-    return(list(fit = rf_fit, pred = rf_pred))
+    return(list(fit = rf_fit, pred = rf_pred, importance = imp))
 }
 
 #' Robust estimation of treatment effect using random forests.

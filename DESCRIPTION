@@ -19,7 +19,8 @@ Imports:
         rqPen,
         keras,
         tensorflow,
-        e1071
+        e1071,
+        vip
 RoxygenNote: 7.1.0
 BuildVignettes: true
 Suggests: 
