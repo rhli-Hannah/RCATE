@@ -20,7 +20,8 @@ Imports:
         keras,
         tensorflow,
         e1071,
-        vip
+        vip,
+        stringr
 RoxygenNote: 7.1.0
 BuildVignettes: true
 Suggests: 

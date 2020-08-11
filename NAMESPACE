@@ -2,6 +2,9 @@
 
 S3method(predict,rcate.am)
 S3method(predict,rcate.ml)
+export(importance.rcate.ml)
+export(importance.rcate.rf)
+export(perm.plot.rcate.ml)
 export(rcate.am)
 export(rcate.ml)
 export(rcate.rf)

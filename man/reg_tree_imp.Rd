@@ -39,5 +39,5 @@ y = 1+sin(X[,1]) + rnorm(n,0,0.5)
 df <- data.frame(y,X)
 tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,newdata=df,weights=rep(1,1000))
 y_pred <- tree$pred
-plot(y,y_pred)
+plot(y,y_pred);abline(0,1)
 }

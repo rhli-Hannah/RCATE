@@ -283,7 +283,7 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
     imp_full <- do.call("rbind", trees[, 2])
 
     # build the mean feature importance between all trees
-    imp <- aggregate(IMPORTANCE ~ FEATURES, FUN = mean, imp_full)
+    imp <- stats::aggregate(IMPORTANCE ~ FEATURES, FUN = mean, imp_full)
 
     # build the ratio for interpretation purposes
     imp$IMPORTANCE <- imp$IMPORTANCE / sum(imp$IMPORTANCE)
