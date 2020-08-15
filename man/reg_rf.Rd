@@ -34,6 +34,7 @@ a list of components
 \itemize{
  \item fit - estimation method.
  \item pred - prediction of newdata.
+ \item importance - vector of variable importance.
  }
 }
 \description{

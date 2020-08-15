@@ -90,6 +90,8 @@ a list of components
  \item d - vector of treatment assignment.
  \item mean.x - column means of predictors.
  \item sd.x -column standard deviation of predictors.
+ \item y.tr - transformed outcome.
+ \item w.tr - transformed weight.
  \item coef -coefficients.
  \item colnum - column number.
  \item nknots - number of knots of cubic spline.
@@ -103,7 +105,7 @@ Fits a \eqn{L_1} additive regression model with the group SCAD penalty.
 }
 \examples{
 n <- 1000; p <- 2; set.seed(2223)
-X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
+X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 tau = 3*X[,1]-X[,2]
 p = 1/(1+exp(-X[,1]+X[,2]))
 d = rbinom(n,1,p)

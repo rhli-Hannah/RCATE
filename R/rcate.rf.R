@@ -210,6 +210,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 #' \itemize{
 #'  \item fit - estimation method.
 #'  \item pred - prediction of newdata.
+#'  \item importance - vector of variable importance.
 #'  }
 #' @examples
 #' n <- 1000; p <- 3
@@ -333,10 +334,11 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #' \itemize{
 #'  \item fit - estimation method.
 #'  \item pred - prediction of newdata.
+#'  \item importance - vector of variable importance.
 #'  }
 #' @examples
 #' n <- 1000; p <- 3
-#' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p); set.seed(2223)
+#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p); set.seed(2223)
 #' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)

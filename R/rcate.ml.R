@@ -53,11 +53,15 @@
 #'  \item x - matrix of predictors.
 #'  \item y - vector of response values.
 #'  \item d - vector of treatment assignment.
+#'  \item y.tr - vector of transformed outcome.
+#'  \item w.tr - vector of transformed weight.
 #'  \item n.trees.gbm - number of trees for estimating treatment effect function if algorithm='GBM'.
+#'  \item history - model fitting history.
+#'  \item importance - variable importance level
 #'  }
 #' @examples
 #' n <- 1000; p <- 3; set.seed(2223)
-#' X <- matrix(rnorm(n*p,0,1),nrow=n,ncol=p)
+#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 #' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
@@ -237,6 +241,7 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
 
   result <- list(model = model, method = method, algorithm = algorithm,
                  fitted.values = fitted.values, x = x, y = y, d = d,
+                 y.tr = y.tr, w.tr = w.tr,
                  n.trees.gbm = n.trees.gbm, history = history, importance = importance)
   class(result) <- "rcate.ml"
   return(result)

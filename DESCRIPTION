@@ -22,7 +22,7 @@ Imports:
         e1071,
         vip,
         stringr
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 BuildVignettes: true
 Suggests: 
     knitr,
