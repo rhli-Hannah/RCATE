@@ -18,7 +18,7 @@ marginal.rcate.ml <- function(object, variable.col=1,...){
   x.select <- seq(min(object$x[,variable.col]),max(object$x[,variable.col]),length.out = 200)
   if (algorithm =='GBM') {
     pred <- predict(model,data.frame(x.cond))
-    plot(x.select,pred,type = 'l')
+    graphics::plot(x.select,pred,type = 'l')
   } else if (algorithm == 'NN') {
     pred <- rowMeans(predict(model,x.cond))
     graphics::plot(x.select,pred,type = 'l')
