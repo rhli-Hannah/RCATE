@@ -1,12 +1,15 @@
 ---
-title: "A robust estimation algorithm for heterogeneous treatment effect"
-authot: "Ruohong Li"
-date: 'r Sys.Date()'
+title: "Robust Estimation Algorithms ofHeterogeneous Treatment Effects: a guide to RCATE package"
+author: "Ruohong Li"
+date: '2020-08-17'
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{my-vignette}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: reference.bib
+header-includes :
+- \usepackage{amsmath}
 ---
 
 ```{r, include = FALSE}
@@ -14,8 +17,155 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+options(rmarkdown.html_vignette.check_title = FALSE)
 ```
 
-```{r setup}
+Heterogeneous treatment effect, also called conditional average treatment effect (CATE) is the causal effect of  a binary variable on an outcome variable conditional on pre-treatment covariates, and the estimation of it is essential in many areas. In practice, such tailoring is guided by the treatment effect, $\tau(\mathbf{X})$, expressed as a function of the observed features $\mathbf{X}$ [@gabriel2012getting]. In reality, the treatment effect function $\tau(\mathbf{X})$ is almost never known, and therefore must be estimated before putting a targeted treatment regime or a policy into practice. 
+
+In real life, a unique challenge is that the observational data sources are often high-dimensional because observational data sources are usually cheap and easy to collect without strict restriction. There is a growing literature on the estimation of treatment effects using machine learning algorithms that can handle high-dimensional data and complex $\tau(\mathbf{X})$ naturally. Another challenge is the presence of outliers due to variety of large data volume, i.e., observations that deviate strongly from the rest of the data distribution. This often leads to biased estimation and questionable inference. @xiao2019robust proposed robust R-learning method. R. Li proposed robust uniform formulation for robust treatment effect estimation including MCM, MCM-EA, R-learning, A-learning, IPW and DR. To fill the gap between robust CATE estimation and machine learning algorithm, algorithm-based robust estimation of heterogeneous treatment effects are implemented in package RCATE. The candidate methods are MCM-EA, R-learning and doubly robust method, the candidate supervised learning algorithms are random forests (RF), gradient boosting machine (GBM), and neural network (NN). We also described a real data application to illustrate the use of the proposed methods.
+
+## 1. Models and Assumption
+With the goal to estimate the conditional average treatment effect (CATE) function $\tau(\mathbf{X})$, we describe the estimation problem within Rubin's potential outcome framework \citep{rubin1974estimating} .  The indicator variable $T\in\{\pm 1\}$  is coded for binary treatment. We let $Y^{(1)}$ and $Y^{(-1)}$ be the univariate and continuous potential outcomes that we would have observed had the subject been assigned to the treatment group $(T=1)$ and the control group $(T=-1)$. We assume that the data $\{(Y_i,T_i,\mathbf{X_i})\}_{i=1}^n$ are independent and identically distributed (i.i.d.) with pre-treament covariates $\mathbf{X}$. In EHR analyses,  $\mathbf{X}$ is often high dimensional. Identification of CATE is possible when $\mathbf{X}$ contains all confounders. We write the observed outcome as $Y=I(T=1)Y^{(1)}+I(T=-1)Y^{(-1)}$, where $I(\cdot)$ is an indicator function. 
+
+Within this potential outcome framework, we focus on the CATE below
+\begin{equation}\label{cate}
+\tau_0(\mathbf{x})=E[Y^{(1)}-Y^{(-1)}|\mathbf{X}=\mathbf{x}]=E[Y|\mathbf{X}=\mathbf{x},T=1]-E[Y|\mathbf{X}=\mathbf{x},T=-1],
+\end{equation}
+where the last part comes from the ignorability assumption defined below. With a binary treatment, we can always algebraically express the conditional mean outcome as
+$$E(Y|\mathbf{X},T)=b_0(\mathbf{X})+\frac{T}{2}\tau_0(\mathbf{X}),$$
+with $b_0(\mathbf{x})=\frac{1}{2}(E[Y^{(1)}|\mathbf{X}=\mathbf{x}]+E[Y^{(-1)}|\mathbf{X}=\mathbf{x}])$. This leads to a general interaction model
+\begin{equation}\label{model}
+    Y_i=b_0({\mathbf{X}_i})+\frac{T_i}{2}\tau_0({\mathbf{X}_i})+\varepsilon_i,
+\end{equation}
+where the model assumption is specified in the Assumption 3 below through the error term $\varepsilon$. We repeat Rubin and Rosenbaum's assumptions below \cite{rubin1974estimating,rosenbaum1983central}:
+
+
+**Assumption 1 (Ignorability)**  Treatment assignment $T_i$ is independent of the potential outcomes $(Y_i^{(1)},Y_i^{(-1)})$ given the covariates $\mathbf{X_i}$, i.e., $\{Y_i^{(1)},Y_i^{(-1)} \perp T_i|\mathbf{X_i}\}$.
+
+**Assumption 2 (Positivity)** The propensity score $p(\mathbf{x}):=P(T=1|\mathbf{X}=\mathbf{x})\in (0,1)$. 
+
+**Assumption 3 (Conditional Independence Error)** The error is independent of the treatment assignment conditional on covariates, i.e. $\{\varepsilon_i \perp T_i|\mathbf{X_i}\}$. We further assume $E(\varepsilon)<\infty$.
+
+## 2. A Unified Formulation for Heterogeneous Treatment Effect Estimation
+Li et. al.(cite the first paper) propose an estimation formulation for CATE $\tau_0(\cdot)$,
+\begin{equation}\label{general}
+\min_{\tau(\cdot)}\frac{1}{n} \sum_{i=1}^n w(\mathbf{X_i},T_i) M(Y_i-g(\mathbf{X_i})-c(\mathbf{X_i},T_i)\tau(\mathbf{X_i})),   
+\end{equation}
+where $M(\cdot)$ is a user-specified loss function that can be $L_2$, $L_1$, or pinball loss, and the two weight functions $w(\mathbf{x},t)$ and $c(\mathbf{x},t)$ are subject to the following constraints:
+
+- C1. $p(\mathbf{x})w(\mathbf{x},1)c(\mathbf{x},1)+(1-p(\mathbf{x}))w(\mathbf{x},-1)c(\mathbf{x},-1)=0$;
+- C2. $c(\mathbf{x},1)-c(\mathbf{x},-1)=1$;
+- C3. $w(\mathbf{x},t)>0$ and $c(\mathbf{x},t) \ne 0$.
+
+This general formulation covers many existing popular methods for heterogeneous treatment effect estimation in a unified formulation. One can show that MCM, MCM-EA, A-learning, R-Learning, IPW, and DR are all covered by this general formulation. In Table below, we show that for each of the above methods, functions $c$, $w$, and $g$ can be chosen to meet the Conditions C1-C3.
+
+
+|Method | 	$w(\mathbf{X_i},T_i)$ | $g(\mathbf{X_i})$	| $c(\mathbf{X_i},T_i)$|
+|---|:---:|:---:|:---:|
+|MCM|		$\frac{1}{T_i p(\mathbf{X_i})+(1-T_i)/2}$ |	0 | $\frac{T_i}{2}$|
+|MCM-EA|		$\frac{1}{T_i p(\mathbf{X_i})+(1-T_i)/2}$ |	$\mu(\mathbf{X_i})$ | $\frac{T_i}{2}$|
+|A-learning|		1 |	0 |	$\frac{T_i-2p(\mathbf{X_i})+1}{2}$|
+|R-learning|		1 |	$\mu(\mathbf{X_i})$|	$\frac{T_i-2p(\mathbf{X_i})+1}{2}$|
+|IPW |$[\frac{T_i-2p(\mathbf{X_i})+1}{2p(\mathbf{X_i})(1-p(\mathbf{X_i}))}]^2$ | 0 | $\frac{2p(\mathbf{X_i})(1-p(\mathbf{X_i}))}{T_i-2p(\mathbf{X_i})+1}$|
+|DR |$[\frac{T_i-2p(\mathbf{X_i})+1}{2p(\mathbf{X_i})(1-p(\mathbf{X_i}))}]^2$ | $\frac{\mu_1(\mathbf{X_i})-\mu_{-1}(\mathbf{X_i})-\frac{(T_i+1)\mu_1(\mathbf{X_i})}{2p(\mathbf{X_i})}+\frac{(1-T_i)\mu_{-1}(\mathbf{X_i})}{2(1-p(\mathbf{X_i}))}}{\frac{T_i-2p(\mathbf{X_i})+1}{2p(\mathbf{X_i})(1-p(\mathbf{X_i}))}}$ | $\frac{2p(\mathbf{X_i})(1-p(\mathbf{X_i}))}{T_i-2p(\mathbf{X_i})+1}$|
+Table: Table 1: Parameters of some popular methods in the framework
+
+As mentioned in Section 1, in real analysis, the existence of outliers is common and $L_1$-loss based methods can naturally alleviate the impact of outliers and make the estimation more robust. Under the $L_1$-loss function, Li et. al. (cite the first paper) show that under Conditions C1-C3, 
+\begin{equation}\label{eq:loss}
+\tau_0(\cdot)=argmin_{\tau(\cdot)}E[ w(\mathbf{X_i},T_i) \cdot |Y_i-g(\mathbf{X_i})-c(\mathbf{X_i},T_i)\tau(\mathbf{X_i})|].     
+\end{equation}
+
+With transformation, the optimization of above equation becomes an ordinary problem based on least absolute deviation (LAD),
+\begin{equation}\label{eq:optimization}
+\hat{\tau}=argmin_{\tau} \frac{1}{n} \sum_{i=1}^n w_i^*(\mathbf{X_i},T_i)|Y_i^*-\tau(\mathbf{X_i}))|,    
+\end{equation}
+where $Y_i^*=\frac{Y_i-g(\mathbf{X_i})}{c(\mathbf{X_i},T_i)}$ and $w_i^*(\mathbf{X_i},T_i)=\frac{w_i(\mathbf{X_i},T_i)}{|c(\mathbf{X_i},T_i)|}$.  
+
+Three methods available in `RCATE` are MCM-EA, R-learning, and doubly robust method. They are well-performing methods that represent three different categories of methods.
+
+An obvious difficulty with estimating $\tau_0(\mathbf{x})$ is that we do not observe $Y^{(1)}$ and $Y^{(−1)}$in individual subjects. Certain transformations of $Y$ could be used to facilitate the estimation of $\tau_0(\mathbf{x})$. Estimation methods relying on such transformations are collectively known as the modified outcome methods. These include the inverse propensity score weighting (IPW) [@horvitz1952generalization;@hirano2003efficient] and the doubly robust (DR) methods [@robins1995semiparametric]. A common feature of these methods is to express the true treatment effect as the conditional expectation of the transformed outcome variables. For IPW and DR, the transformations are
+$$\begin{aligned}
+Y^{IPW}&=\frac{T-2p(\mathbf{X})+1}{2p(\mathbf{X})(1-p(\mathbf{X}))}\times Y;\\
+Y^{DR}&=\frac{T-2p(\mathbf{X})+1}{2p(\mathbf{X})(1-p(\mathbf{X}))}\times[Y-(\mu_{-1}(\mathbf{X})p(\mathbf{X})+\mu_{1}(\mathbf{X})(1-p(\mathbf{X})))],
+\end{aligned}$$
+where $\mu_t(\mathbf{x})=E[Y|\mathbf{X}=\mathbf{x},T=t]$. Writing the modified outcome as $Y^*$ such that $E(Y^*|\mathbf{X})=\tau_0(\mathbf{X})$, one could achieve an estimate by minimizing the difference between $Y_i$ and $\tau(\mathbf{X_i})$. 
+
+More recently,  @nie2017quasi proposed a method called R-learning. The method was so named because it used a decomposition proposed by @robinson1988root. Subtracting the marginal mean $E[Y_i|\mathbf{X_i}]$ from the outcome, Nie and Wager worked with the following equation 
+$$Y_i-E[Y_i|\mathbf{X_i}]=(\frac{T_i}{2}-p(\mathbf{X_i})+\frac{1}{2})\tau(\mathbf{X_i})+\varepsilon_i,$$
+where $E[\varepsilon_i|\mathbf{X_i},T_i]=0$.
+
+An alternative set of methods, collectively known as the  modified covariate methods. A central idea is to estimate $\tau(\mathbf{X})$ by introducing inverse propensity weighting into the following objective function \citep{tian2014simple,chen2017general}
+$$L(\tau(\cdot))=\sum_{i=1}^n \left(D_i\frac{1}{p(\mathbf{X_i})}+(1-D_i)\frac{1}{1-p(\mathbf{X_i})}\right)\left|Y_i-\frac{T_i}{2}\tau(\mathbf{X_i})\right|,$$
+where $D_i=(T_i+1)/{2} \in \{0,1\}$. Variance of the estimator is reduced when we replace $Y_i$ with $Y_i-\mu(\mathbf{X_i})$. This is known as the modified covariates method with efficiency augmentation (MCM-EA) [@tian2014simple].
+
+## 3. Robust estimation with supervised learning algorithms
+### 3.1 Random Forests
+The building blocks of Random Forests are regression trees [@breiman1984classification]. Regression trees recursivly partition the sample along covariates to minimize the heterogeneity of the outcome. This leads to the tree structure and the aggregation results in the final leaves are used as predictions (for an introduction, see @hastie2009elements). However, regression trees are unstable and exhibit a high variance. The Random Forests of Breiman addresses this issue by combining a large number of decorrelated regression trees. The decorrelated is achieved by growing each tree on a random subsample (generated either by bootstrapping or subsampling) and by randomly choosing the covariates for each split decision. 
+
+The standard regression forests split the trees to minimize the MSE of the observed outcomes (i.e., $MSE=\sum_{i \in L_l} (Y_i-\tilde{Y_l})^2+\sum_{i \in L_r} (Y_i-\tilde{Y_r})^2$, where $\tilde{Y_l}$ and $\tilde{Y_r}$ are usually average within leaf node). Those trees can then be used to form predictions of $Y_i$. These predictions are formed as a weighted average of the observed outcomes where the weights are larger, the more often the observed outcome shares a final leave with the realization of $X_i$. 
+The robust random forests (RRF) follows a similar structure. However, instead of splitting the leaf according to leaf node average and MSE, RRF split the samples based on 
+weighted LAD rule. The best split at a current node is the one minimizing 
+$$WLAD=\sum_{i \in L_l} w_i|Y_i-\tilde{Y_l}|+\sum_{i \in L_r} w_i|Y_i-\tilde{Y_r}|,$$
+where $\tilde{Y_l}$ and $\tilde{Y_r}$ are leaf node median to increase robustness and $w_i$ is the weight of each observation. 
+
+```{r echo=FALSE, out.width = '100%'}
+knitr::include_graphics("algorithm1.png")
+```
+
+### 3.2  Gradient boosting machine
+Gradient boosting [@friedman2000additive;@friedman2001greedy;@friedman2002stochastic] is a supervised machine learning technique which produces a prediction model $\hat{f}(x)$  in the form of an ensemble of weak prediction models, typically regression trees. It builds the model in a stage-wise fashion, and it generalizes them by allowing optimization of an arbitrary differentiable loss function $\Psi(y,f)$. The algorithm of GBM is as follows:
+```{r echo=FALSE, out.width = '100%'}
+knitr::include_graphics("algorithm2.png")
+```
+For robust estimation, the deviance is $\frac{1}{\sum w_i} \sum w_i |y_i-f(x_i)|$, the corresponding gradient is $z_i=sign(y_i-f(x_i))$, and the terminal node estimate is the weighted median $median_w(z)$, defined as the solution to the equation $\frac{\sum w_i I(y_i \le m)}{\sum w_i} = \frac{1}{2}$. 
+
+### 3.3 Neural Networks
+Artificial neural networks (for an introduction, see @goodfellow2016deep), also called neural networks (NNs) are biologically inspired computer programs designed to simulate the way in which the human brain processes information. NNs gather their knowledge by detecting the patterns and relationships in data and learn through experience, and map inputs to outputs  by finding correlation $f(\cdot)$. The basic component of a neural network is the neuron, also called “node”. Inputs are represented by $x_1$, $x_2$ and $x_p$, and the values $W_{1j}$, $W_{2j}$, ..., $W_{pj}$ are weight factors associated with the inputs to the node in the following layer. Every input is multiplied by its corresponding weight factor, and the node uses summation of these weighted inputs to estimate an output signal using an activation function $g(\cdot)$. The other input to the node, $b_j$, is the node’s internal threshold, also called bias. This is a randomly chosen value that governs the node’s net input through the following equation,
+$g(\sum_{i=1}^p W_{ij}x_i+b_j).$
+A no hidden layer NN with linear activation function is similar to linear regression in structure. And for flexibility, multi-layer networks are commonly used in real application. Multi-layer networks use a variety of learning techniques to learn the weight factors, the most popular one is back-propagation [@rumelhart1986learning]. The output values are compared with the true value to compute the error using predefined error-function. By various techniques, the error is then fed back through the network. Using this information, the algorithm adjusts the weights of each connection in order to reduce the value of the error by some small amount. After repeating this process for a sufficiently large number of training cycles, the network will usually converge to some state where the error of the calculations is small. 
+
+A feed forward network with two hidden layers and a single output neural (Figure 1) is used for robust treatment effect estimation. The number of neural in the first and second hidden layer are $p$ and $p/2$. The most popular loss function is RMSE (i.e., $\sqrt{\frac{1}{n}\sum_{i=1}^n (y_i-\hat{y}_i}$), however, to increase the robustness, the loss function we suggest is $\frac{1}{n}\sum_{i=1}^n w_i |y_i-\hat{y}_i|$, where the weight and outcome are transformed according to Table 1.
+```{r echo=FALSE, out.width = '100%', fig.cap="Figure 1: Neural Network Structure"}
+knitr::include_graphics("nnet.png")
+```
+
+## 4. Common user options
+This section discusses the options to RCATE that most users could change
+or tune.
+
+### 4.1 Estimation Method
+The first and foremost choice is `method`. For modified covariate method with efficient augmentation, the choice is `"MCMEA"`; for R-learning, the choice is `"RL"`; and for doubly robust method, the choice is `"DR"`. 
+
+### 4.2 Available Algorithm
+The second choice is `algorithm`. As mentioned above,three popular supervised learning algorithms are available. 
+
+For robust random forest, `rcate.rf` function should be called, the choice of `algorithm` is `"RF"`. When using `algorithm="RF"`, the number of trees `n_trees`, fraction of features used in each split `feature_frac`, and the minimal leaf size of tree `minnodes` can be tuned. For gradient boosting machine, `rcate.ml` function should be called, the choice of `algorithm` is `"GBM"`. When using `algorithm="GBM"`, the number of trees used `n.trees.gbm`, the number of interactions in each tree `interaction.depth.gbm` can be tuned. And for neural network, `rcate.ml` function should be called, the choice of `algorithm` is `"NN"`. When using it, the default network structure has two hidden layers, the default number of neurals in them are p and p/2, where p is the input data dimension. They can be tuned by `n.cells.nn`, so is the drop out rate between the first and the second hidden layer `dropout.nn`. The number of epochs `epochs.nn` can be tuned as well.
+
+To compare with regression based method, the additive B-spline regression with smoothness and sparsity penalty is implemented in `rcate.am` function (first piece). There are two tuning parameters in the smoothness and sparsity penalty term, `lambda.smooth` for smoothness , the other $\lambda$ for variable selection that can be tuned by cross-validation by defining the number of $\lambda's$ to try using `nlambda` and the number of folds using `nfolds`.   
+
+### 4.3 Other options for nuisance parameters
+When using MCM-EA and R-learning, the mean function $\mu(X)$ and propensity score function $p(X)$ need to be estimated; and when using doubly robust method, the $\mu^{(1)}(X)$, $\mu^{(-1)}(X)$ and $p(X)$ need to be estimated. As suggested by @mccaffrey2004propensity, GBM is used for estimating all the nuisance parameters.
+
+The number of trees `n.trees.p`, the shrinkage level `shrinkage.p`, the minimum node size `n.minobsinnode.p`, the number of interactions `interaction.depth.p`, and the cross-validation folds `cv.p` used for estimating propensity score can be tuned. So are the number of trees `n.trees.mu`, the shrinkage level `shrinkage.mu`, the minimum node size `n.minobsinnode.mu`, the number of interactions `interaction.depth.mu`, and the cross-validation folds `cv.mu` for estimating the mean functions.
+
+## 5. Real Application and Utility Functions
+To illustrate the use of the methods we propose, we estimated the treatment effects of two different antihypertensive therapies by analyzing observed clinical data set from the Indiana Network of Patient Care, a local EHR system. The data were a subset of a previous study assessing the blood pressure (BP)-lowering effects of various antihypertensive agents [@tu2016triamterene]. In this analysis, we compared the BP effects of  angiotensin-converting-enzyme inhibitors (ACEI) alone and a combination of ACEI  and hydrochlorothiazide (HCTZ). We considered those on ACEI alone as in treatment group A, and those on ACEI+HCTZ as in group B. The primary outcome of interest is clinically recorded systolic BP in response to these therapies. Independent variables included the demographic and clinical characteristics, as well as medication use behaviors of the study participants. Data from $882$ participants were used in the current analysis. Among these, $350$ were on the monotherapy of ACEI, and $532$ were on the combination therapy of ACEI+HCTZ. 
+
+We expressed the treatment effect of treatment B, in comparison against treatment A, as a function of the patient characteristics $\mathbf{x}$
+$$\tau(\mathbf{x})=E[Y(B)-Y(A)|\mathbf{X}=\mathbf{x}],$$
+where $Y$ represents the systolic BP change before and after the treatment. Since the treatment effect of a therapy is measured by its ability to lower BP, a negative $\tau(\mathbf{x})$ indicates a superior effect of the combination therapy of the monotherapy, for a given $\mathbf{x}$. An important covariate of interest is the level of medication adherence, which we measured with the proportions of days covered (PDC) by the medication.
+
+
+
+```{r}
+# load RCATE package and hypertension data
 library(RCATE)
+data(hypertension)
+dt <- hypertension
+
+# remove incomplete observations
+dt <- na.omit(dt)
+
+# standardize the data
+
 ```
