@@ -155,8 +155,7 @@ We expressed the treatment effect of treatment B, in comparison against treatmen
 $$\tau(\mathbf{x})=E[Y(B)-Y(A)|\mathbf{X}=\mathbf{x}],$$
 where $Y$ represents the systolic BP change before and after the treatment. Since the treatment effect of a therapy is measured by its ability to lower BP, a negative $\tau(\mathbf{x})$ indicates a superior effect of the combination therapy of the monotherapy, for a given $\mathbf{x}$. An important covariate of interest is the level of medication adherence, which we measured with the proportions of days covered (PDC) by the medication.
 
-
-
+The following code showed how to use **RCATE** to estimate heterogeneous treatment effect:
 ```{r}
 # load RCATE package and hypertension data
 library(RCATE)
@@ -177,9 +176,26 @@ y <- dt[,'avgsysbp']
 
 # use GBM and MCM-EA to do estimation
 fit <- rcate.ml(x=x,y=y,d=d)
-
-importance.rcate.ml(fit)
-
-# show marginal treatment effect plot
-marginal.rcate.ml(fit,'PDC_avg')
 ```
+
+Following code and barplot showed the importance level of each variable.
+```{r fig.height = 7, fig.width = 7}
+# Variable importance level
+importance <- importance.rcate.ml(fit)
+```
+
+Following code and figure showed the marginal treatment effect of PDC by setting other continuous variable at their mean and binary variable at zero.
+```{r fig.height = 5, fig.width = 5, fig.align='center'}
+# show marginal treatment effect plot
+marginal.rcate(fit,'PDC_avg')
+```
+Figure above showed that $\hat{\tau}$ gradually decreased with an increasing PDC, implying that the BP lowering effects of the combination therapy improved when patients becoming more adherent to the prescribed medicines. The marginal treatment effect line is not smooth because of the limited sample size.
+
+Figure below showed that the treatment effect of patients with diffenrent characteristics vary a lot. 
+```{r fig.height = 5, fig.width = 5, fig.align='center'}
+y_pred <- predict(fit,x)$predict
+hist(y_pred)
+```
+
+## 6. Conclusion
+A few of the capabilities of the **R RCATE** package have been described. Inevitably, new applications will demand new features and reveal unforseen bugs. In either case I hope that users will send me their comments and suggestions. This document will be periodically updated and the current version will be made available in the R distribution of quantreg. See the R command **vignette()** for details on how to find and view vignettes from within **R** .

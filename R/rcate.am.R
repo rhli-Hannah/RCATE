@@ -30,75 +30,6 @@ knot <- function(x, knots.op) {
   return(knot.mat)
 }
 
-# Adaptive INIS
-adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
-                      folds = NULL, quant = NULL, kfold = NULL, knots = NULL, eps0 = 1e-06,
-                      DOISIS = TRUE, maxloop = 10, trace = FALSE, detailed = FALSE) {
-  t0 = proc.time()[1]
-  cat("starting adaptINIS, NIS algorithm, adatively choose number of variables\n")
-  n <- nrow(x)
-  p <- ncol(x)
-
-
-  # if(is.null(nsis)) nsis=min(floor(n/log(n)),p-1)
-  if (is.null(knots)) {
-    knots = ceiling(n^0.2)
-  }
-  if (is.null(folds)) {
-    temp = sample(1:n, n, replace = FALSE)
-    if (is.null(kfold))
-      kfold = 5
-    for (i in 1:kfold) {
-      folds[[i]] = setdiff(1:n, temp[seq(i, n, kfold)])
-    }
-  }
-  if (is.null(quant)) {
-    quant = 1
-  }
-  df0 <- knots + 1
-
-  xbs = matrix(0, n, df0 * p)
-
-
-  for (i in 1:p) {
-    xbs[, (i - 1) * (df0) + (1:df0)] = splines::ns(x[, i], df = df0)
-  }
-
-
-  tempresi <- rep(0, p)
-
-  curloop = 1
-  for (i in 1:p) {
-    tempfit <- stats::lm.fit(x = cbind(1, xbs[, (i - 1) * df0 + 1:df0]), y = y)
-    tempresi[i] <- sum(tempfit$residuals^2)
-  }
-
-
-  used.list <- tempresi
-
-  used.sort <- sort(used.list, method = "sh", index = TRUE, decreasing = FALSE)
-  initRANKorder <- used.sort$ix
-
-
-  mindex <- sample(1:n)
-  mresi = NULL
-  for (i in 1:p) {
-    tempfit <- stats::lm.fit(x = cbind(1, xbs[, (i - 1) * df0 + 1:df0]), y = y[mindex])
-    mresi[i] <- sum(tempfit$residuals^2)
-  }
-  resi.thres = stats::quantile(mresi, 1 - quant)
-  nsis <- max(min(sum(used.list < resi.thres), floor(n/df0/3)), 2)
-
-
-  SISind <- sort(initRANKorder[1:nsis])
-  if (!DOISIS)
-    return(list(initRANKorder = initRANKorder, SISind = SISind, nsis = nsis))
-
-  cat("loop ", curloop, "...SISind ", SISind, "\n")
-  pick.ind = initRANKorder[1:nsis]
-
-  return(pick.ind)
-}
 
 #' Robust estimation of treatment effect using additive b-spline model.
 #'
@@ -113,7 +44,6 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #' method with efficiency augmentation or "RL" - R-learning.
 #' @param  NIS logical of using non-parametric independent screening or not. The default is TRUE
 #' when \eqn{p < n/log(n)}.
-#' @param  nknots number of knots for cubic spline. The default is \eqn{floor(sqrt(n)/2)}.
 #' @param  lambda.smooth scalar represent the smoothness penalty lambda2. The default is 2.
 #' @param  nlambda number of lambda1s for cross-validation. The default is 30.
 #' @param  nfolds number of folds for cross-validation. The default is 5.
@@ -147,31 +77,30 @@ adaptINIS <- function(x, y, testdata = NULL, lambda.pen.list = NULL,
 #'  \item x - matrix of predictors.
 #'  \item y - vector of response values.
 #'  \item d - vector of treatment assignment.
-#'  \item mean.x - column means of predictors.
-#'  \item sd.x -column standard deviation of predictors.
 #'  \item y.tr - transformed outcome.
 #'  \item w.tr - transformed weight.
 #'  \item coef -coefficients.
 #'  \item colnum - column number.
 #'  \item nknots - number of knots of cubic spline.
+#'  \item param - required parameters for utility functions.
 #'  }
 #' @examples
 #' n <- 1000; p <- 2; set.seed(2223)
-#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
-#' tau = 3*X[,1]-X[,2]
+#' X <- as.data.frame(matrix(runif(n*p,-3,3),nrow=n,ncol=p))
+#' tau = 3*X[,1]-2*X[,2]
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
 #' y = 100+tau*t/2 + rnorm(n,0,1); set.seed(2223)
-#' x_val = matrix(rnorm(200*2,0,1),nrow=200,ncol=2)
-#' tau_val = 3*x_val[,1]-x_val[,2]
+#' x_val = as.data.frame(matrix(rnorm(200*2,0,1),nrow=200,ncol=2))
+#' tau_val = 3*x_val[,1]-2*x_val[,2]
 #'
-#' fit <- rcate.am(X,y,d,lambda.smooth = 2, method = 'RL')
+#' fit <- rcate.am(X,y,d,lambda.smooth = 4, method = 'RL')
 #' y_pred <- predict(fit,x_val)$pred
 #' plot(tau_val,y_pred);abline(0,1)
 #'
 #' @export
-rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
+rcate.am <- function(x, y, d, method = "MCMEA", nknots = NA,
                      lambda.smooth = 1, nlambda = 30, nfolds = 5, n.trees.p = 40000,
                      shrinkage.p = 0.005, n.minobsinnode.p = 10,
                      interaction.depth.p = 1, cv.p = 2, n.trees.mu = c(1:50) * 50,
@@ -188,27 +117,33 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
   row <- nrow(x)
   col <- ncol(x)
 
-  # Standardize X
-  mean.x <- apply(x, 2, mean)
-  sd.x <- apply(x, 2, sd)
-  center.x <- (x - mean.x)/sd.x
-
   # Calculate number of knots
   if (is.na(nknots)) {
-    nknots <- floor(sqrt(row)/2)
+     nknots <- floor(sqrt(row)/2)
   }
 
-  # NIS
-  if (col < floor(row/log(row)) | NIS == FALSE) {
-    colnum <- 1:col
+  # Standardize X
+  x.num <- dplyr::select_if(x, is.numeric)
+  x.mean <- apply(x.num, 2, mean)
+  x.sd <- apply(x.num, 2, sd)
+  x.num.scaled <- scale(x.num)
+  name.num <- colnames(x.num)
+  x.other <- data.frame(x[ , -which(names(x) %in% name.num)])
+  if (ncol(x.other)==0) {
+    x.scaled <- x.num.scaled
+    group2 <- rep(1:ncol(x.num.scaled), each = nknots + 3)
+    group <- group2
   } else {
-    colnum_d <- adaptINIS(x, d)
-    colnum_y1 <- adaptINIS(x[d == 1, ], y[d == 1])
-    colnum_y0 <- adaptINIS(x[d == 0, ], y[d == 0])
-    colnum <- sort(unique(union(union(colnum_d, colnum_y0), colnum_y1)))
+    x.other <- apply(x.other, 2, function(x) as.numeric(as.character(x)))
+    x.scaled <- cbind(x.num.scaled,x.other)
+    group2 <- rep(1:ncol(x.num.scaled), each = nknots + 3)
+    group1 <- seq(1:ncol(x.other))
+    group <- c(group2,group1+max(group2))
   }
-  group <- rep(1:length(colnum), each = nknots + 3)
-  x.tr <- center.x[, colnum]
+
+  colnum <- seq(1:ncol(x.num.scaled))
+  x.tr <- x.scaled
+
 
   # If X has only one dimension, transform it into a matrix with one column
   if (is.vector(x.tr)) {
@@ -217,7 +152,7 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
 
   # Estimate mu0(x), mu1(x) and p(x)
   data.p <- data.frame(cbind(factor(d), x))
-  colnames(data.p) <- c("d", paste0("X", 1:ncol(x)))
+  colnames(data.p)[1] <- c("d")
   data.p$d <- as.factor(data.p$d)
   gbmGrid.p <- expand.grid(interaction.depth = interaction.depth.p,
                            n.trees = n.trees.p, shrinkage = shrinkage.p,
@@ -228,7 +163,7 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
   pscore.hat <- caret::predict.train(gbmFit.p, newdata = data.p, type = "prob")[, 2]
 
   data00 <- data.frame(cbind(y, x, d))
-  colnames(data00) <- c("y", paste0("X", 1:ncol(x)), "d")
+  colnames(data00)[c(1,ncol(data00))] <- c("y", "d")
   # data020 <- data00[data00$d == 0, ]
   # data021 <- data00[data00$d == 1, ]
 
@@ -256,16 +191,16 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
     wmat.tr <- matrix(0, row, row)
     diag(wmat.tr) <- w.tr * t/2
 
-    Btilde <- B_R(x.tr, x.tr, lambda.smooth, nknots, colnum)
-    x.tr1 <- wmat.tr %*% cbind(rep(1, row), Btilde)
+    Btilde <- B_R(x.num.scaled, x.num.scaled, lambda.smooth, nknots, colnum)
+    x.tr1 <- wmat.tr %*% as.matrix(cbind(rep(1, row), Btilde, x.other))
   } else if (method == "RL") {
     w.tr <- 1
     y.tr <- (y - mu.ea) * w.tr
     wmat.tr <- matrix(0, row, row)
     diag(wmat.tr) <- w.tr * (t - 2 * pscore.hat + 1)/2
 
-    Btilde <- B_R(x.tr, x.tr, lambda.smooth, nknots, colnum)
-    x.tr1 <- wmat.tr %*% cbind(rep(1, row), Btilde)
+    Btilde <- B_R(x.num.scaled, x.num.scaled, lambda.smooth, nknots, colnum)
+    x.tr1 <- wmat.tr %*% as.matrix(cbind(rep(1, row), Btilde, x.other))
   }
 
   # Fit the weighted LAD model with group SCAD
@@ -274,13 +209,14 @@ rcate.am <- function(x, y, d, method = "MCMEA", NIS = TRUE, nknots = NA,
                                   nfolds = nfolds, criteria = "BIC", nlambda = nlambda)
   # Get coefficients and fitted value
   coef <- coef(model)
-  fitted.values <- cbind(rep(1, nrow(Btilde)), Btilde) %*% coef
+  fitted.values <- as.matrix(cbind(rep(1, nrow(Btilde)), Btilde, x.other)) %*% coef
 
   result <- list(model = model, method = method, algorithm = "SAM",
                  lambda.smooth = lambda.smooth, fitted.values = fitted.values,
-                 x = x, y = y, d = d, mean.x = mean.x, sd.x = sd.x,
-                 y.tr = y.tr, w.tr = w.tr,
-                 coef = coef, colnum = colnum, nknots = nknots)
+                 x = x, y = y, d = d, y.tr = y.tr, w.tr = w.tr,
+                 coef = coef, colnum = colnum, nknots = nknots,
+                 param = list(x.scaled=x.scaled, name.num=name.num,
+                              x.mean=x.mean, x.sd=x.sd, x.num.scaled = x.num.scaled))
   class(result) <- "rcate.am"
   return(result)
 }

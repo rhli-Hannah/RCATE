@@ -70,22 +70,27 @@ predict.rcate.ml <- function(object, x, ...) {
 predict.rcate.am <- function(object, x,...) {
     algorithm <- object$algorithm
     model <- object$model
-    colnum <- object$colnum
+    name.num <- object$param$name.num
 
-    center.x <- apply(object$x, 2, function(x) (x - object$mean.x)/object$sd.x)
-    center.xval <- apply(x, 2, function(x) (x - object$mean.x)/object$sd.x)
+    center.x <- object$param$x.num.scaled
+    center.xval <- NULL
+    for (i in 1:ncol(center.x)) {
+      xval1 <- (x[,name.num][,i]-object$param$x.mean[i])/object$param$x.sd[i]
+      center.xval <- cbind(center.xval,xval1)
+    }
+    center.xval <- center.xval+matrix(rnorm(200*ncol(center.xval),0,0.001),nrow = 200)
 
     if (algorithm == "SAM") {
-      center.xval <- center.xval[, colnum]
-      center.x <- center.x[, colnum]
-
       if (is.vector(center.xval) & is.vector(center.x)) {
         center.xval <- matrix(center.xval, ncol = 1)
         center.x <- matrix(center.x, ncol = 1)
       }
 
-      Btilde.val <- B_R(center.xval, center.x, object$lambda.smooth, object$nknots, colnum)
-      predict <- cbind(rep(1, nrow(Btilde.val)), Btilde.val) %*% object$coef
+
+      Btilde.val <- B_R(center.xval, center.x, object$lambda.smooth, object$nknots, seq(1:ncol(center.xval)))
+      mat.val <- as.matrix(cbind(rep(1, nrow(Btilde.val)), Btilde.val,
+                                 x[, !names(x) %in% name.num]))
+      predict <- mat.val %*% object$coef
     }
 
 

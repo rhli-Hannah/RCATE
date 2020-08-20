@@ -57,7 +57,8 @@
 #'  \item w.tr - vector of transformed weight.
 #'  \item n.trees.gbm - number of trees for estimating treatment effect function if algorithm='GBM'.
 #'  \item history - model fitting history.
-#'  \item importance - variable importance level
+#'  \item importance - variable importance level.
+#'  \item param - required parameters for utility functions.
 #'  }
 #' @examples
 #' n <- 1000; p <- 3; set.seed(2223)
