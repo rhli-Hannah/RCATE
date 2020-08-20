@@ -7,26 +7,28 @@
 #' @param ... other.
 #' @rdname marginal.rcate.ml
 #' @export
-marginal.rcate.ml <- function(object, variable.col=1,...){
+marginal.rcate.ml <- function(object, variable.name=NULL,...){
   model <- object$model
   algorithm <- object$algorithm
   x <- object$x
   x.mean <- object$param$x.mean
   x.sd <- object$param$x.sd
 
-  x.select <- seq(min(x[,variable.col]),max(x[,variable.col]),length.out = 200)
-  x.cond.scaled <- (x.select-x.mean[variable.col])/x.sd[variable.col]
-  x.cond <- matrix(0,ncol = ncol(x),nrow = 200)
-  x.cond[,variable.col] <- x.cond.scaled
+  if (is.null(variable.name)) {
+    variable.name <- colnames(object$param$x.scaled)[1]
+  }
+
+  x.select <- seq(min(x[,variable.name]),max(x[,variable.name]),length.out = 200)
+  x.cond.scaled <- (x.select-x.mean[variable.name])/x.sd[variable.name]
+  x.cond <- data.frame(matrix(0,ncol = ncol(x),nrow = 200))
+  colnames(x.cond) <- colnames(object$param$x.scaled)
+  x.cond[,variable.name] <- x.cond.scaled
   if (algorithm =='GBM') {
-    x.pred = data.frame(x.cond)
-    colnames(x.pred) = colnames(x)
-    pred <- predict(model,x.pred)
-    graphics::plot(x.select,pred,type = 'l',xlab='x.selected')
+    pred <- predict(model,x.cond)
+    graphics::plot(x.select,pred,type = 'l',xlab=variable.name)
   } else if (algorithm == 'NN') {
-    colnames(x.cond) <- colnames(x)
     pred <- rowMeans(predict(model,as.matrix(x.cond)))
-    graphics::plot(x.select,pred,type = 'l',xlab='x.selected')
+    graphics::plot(x.select,pred,type = 'l',xlab=variable.name)
   }
 }
 

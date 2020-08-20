@@ -178,7 +178,8 @@ y <- dt[,'avgsysbp']
 # use GBM and MCM-EA to do estimation
 fit <- rcate.ml(x=x,y=y,d=d)
 
+importance.rcate.ml(fit)
+
 # show marginal treatment effect plot
-#marginal.rcate.ml(fit,13)
-#marginal.rcate.ml(fit,15)
+marginal.rcate.ml(fit,'PDC_avg')
 ```
