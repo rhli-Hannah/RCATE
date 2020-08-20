@@ -16,13 +16,33 @@
 #' @rdname predict.rcate.ml
 #' @export
 predict.rcate.ml <- function(object, x, ...) {
-  algorithm <- object$algorithm
+    algorithm <- object$algorithm
     model <- object$model
+    param <- object$param
+    x.mean <- param$x.mean
+    x.sd <- param$x.sd
+    name.num <- param$name.num
+
+    x.num <- dplyr::select_if(x, is.numeric)
+    scaled <- NULL
+    for (i in 1:ncol(x.num)) {
+      scaled1 <- (x.num[,i]-x.mean[i])/x.sd[i]
+      scaled <- cbind(scaled,scaled1)
+    }
+    x.num.scaled <- scaled
+    x.other <- data.frame(x[ , -which(names(x) %in% name.num)])
+    if (ncol(x.other)==0) {
+      x.scaled <- x.num.scaled
+    } else {
+      x.other <- apply(x.other, 2, function(x) as.numeric(as.character(x)))
+      x.scaled <- cbind(x.num.scaled,x.other)
+    }
+    colnames(x.scaled) <- colnames(object$param$x.scaled)
 
     if (algorithm == "GBM") {
-      predict <- predict(model, data.frame(x), n.trees = object$n.trees.gbm)
+      predict <- predict(model, data.frame(x.scaled), n.trees = object$n.trees.gbm)
     } else if (algorithm == "NN") {
-      predict <- rowMeans(predict(model,x))
+      predict <- rowMeans(predict(model,as.matrix(x.scaled)))
       model <- NULL
     }
 

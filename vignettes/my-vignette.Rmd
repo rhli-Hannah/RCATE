@@ -166,6 +166,19 @@ dt <- hypertension
 # remove incomplete observations
 dt <- na.omit(dt)
 
-# standardize the data
+# define x,y,d
+x <- dt[,c("diabetes","ckd","cad","mi","chf","hyperlip","atrfib","stroke","copd","depression",
+                   "black","male","bmicalc","pulse","PDC_avg","approxAge2009")]
+cols <- c("diabetes","ckd","cad","mi","chf","hyperlip","atrfib","stroke","copd","depression",
+                   "black","male")
+x[cols] <- lapply(x[cols], factor)
+d <- dt[,'D']
+y <- dt[,'avgsysbp']
 
+# use GBM and MCM-EA to do estimation
+fit <- rcate.ml(x=x,y=y,d=d)
+
+# show marginal treatment effect plot
+#marginal.rcate.ml(fit,13)
+#marginal.rcate.ml(fit,15)
 ```

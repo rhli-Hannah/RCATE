@@ -110,7 +110,7 @@ Fit a GBM or NN to estimate treatment effect estimation that robust to outliers.
 }
 \examples{
 n <- 1000; p <- 3; set.seed(2223)
-X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
+X <- as.data.frame(matrix(runif(n*p,-3,3),nrow=n,ncol=p))
 tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 p = 1/(1+exp(-X[,1]+X[,2]))
 d = rbinom(n,1,p)

@@ -11,17 +11,22 @@ marginal.rcate.ml <- function(object, variable.col=1,...){
   model <- object$model
   algorithm <- object$algorithm
   x <- object$x
-  x.colmean <- colMeans(object$x)
-  x.cond <- matrix(rep(colMeans(object$x), times=200),
-                   nrow = 200,ncol = ncol(object$x), byrow=TRUE)
-  x.cond[,variable.col] <- seq(min(object$x[,variable.col]),max(object$x[,variable.col]),length.out = 200)
-  x.select <- seq(min(object$x[,variable.col]),max(object$x[,variable.col]),length.out = 200)
+  x.mean <- object$param$x.mean
+  x.sd <- object$param$x.sd
+
+  x.select <- seq(min(x[,variable.col]),max(x[,variable.col]),length.out = 200)
+  x.cond.scaled <- (x.select-x.mean[variable.col])/x.sd[variable.col]
+  x.cond <- matrix(0,ncol = ncol(x),nrow = 200)
+  x.cond[,variable.col] <- x.cond.scaled
   if (algorithm =='GBM') {
-    pred <- predict(model,data.frame(x.cond))
-    graphics::plot(x.select,pred,type = 'l')
+    x.pred = data.frame(x.cond)
+    colnames(x.pred) = colnames(x)
+    pred <- predict(model,x.pred)
+    graphics::plot(x.select,pred,type = 'l',xlab='x.selected')
   } else if (algorithm == 'NN') {
-    pred <- rowMeans(predict(model,x.cond))
-    graphics::plot(x.select,pred,type = 'l')
+    colnames(x.cond) <- colnames(x)
+    pred <- rowMeans(predict(model,as.matrix(x.cond)))
+    graphics::plot(x.select,pred,type = 'l',xlab='x.selected')
   }
 }
 

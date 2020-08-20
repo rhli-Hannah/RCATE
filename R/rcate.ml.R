@@ -61,7 +61,7 @@
 #'  }
 #' @examples
 #' n <- 1000; p <- 3; set.seed(2223)
-#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
+#' X <- as.data.frame(matrix(runif(n*p,-3,3),nrow=n,ncol=p))
 #' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
@@ -100,8 +100,21 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
     dropout.nn <- c(0.5)
   }
 
+  x.num <- dplyr::select_if(x, is.numeric)
+  x.mean <- apply(x.num, 2, mean)
+  x.sd <- apply(x.num, 2, sd)
+  x.num.scaled <- scale(x.num)
+  name.num <- colnames(x.num)
+  x.other <- data.frame(x[ , -which(names(x) %in% name.num)])
+  if (ncol(x.other)==0) {
+    x.scaled <- x.num.scaled
+  } else {
+    x.other <- apply(x.other, 2, function(x) as.numeric(as.character(x)))
+    x.scaled <- cbind(x.num.scaled,x.other)
+  }
+
   # Estimate mu0(x), mu1(x) and p(x)
-  data.p <- data.frame(cbind(d, x))
+  data.p <- data.frame(cbind(d, x.scaled))
   #colnames(data.p) <- c("d", paste0("X", 1:ncol(x)))
   data.p$d <- as.factor(data.p$d)
   gbmGrid.p <- expand.grid(interaction.depth = interaction.depth.p,
@@ -113,8 +126,8 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
                            tuneGrid = gbmGrid.p)
   pscore.hat <- caret::predict.train(gbmFit.p, newdata = data.p, type = "prob")[, 2]
 
-  data00 <- data.frame(cbind(y, x, d))
-  colnames(data00) <- c("y", paste0("X", 1:ncol(x)), "d")
+  data00 <- data.frame(cbind(y, x.scaled, d))
+  colnames(data00)[c(1,ncol(data00))] <- c("y", "d")
   data020 <- data00[data00$d == 0, ]
   data021 <- data00[data00$d == 1, ]
 
@@ -153,20 +166,20 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
 
   # Fit GBM
   if (algorithm == "GBM") {
-    data.gbm <- data.frame(cbind(y.tr, x))
-    colnames(data.gbm) <- c("y.tr", paste0("X", 1:ncol(x)))
+    data.gbm <- data.frame(cbind(y.tr, x.scaled))
+    colnames(data.gbm)[1] <- c("y.tr")
     model <- gbm::gbm(y.tr ~ ., data = data.gbm, distribution = "laplace",
                       weights = w.tr, n.trees = n.trees.gbm,
                       interaction.depth = interaction.depth.gbm)
-    df.x <- data.frame(x)
-    colnames(df.x) <- paste0("X", 1:ncol(x))
+    df.x <- data.frame(x.scaled)
+    #colnames(df.x) <- paste0("X", 1:ncol(x))
     fitted.values <- gbm::predict.gbm(model, df.x, n.trees = n.trees.gbm)
 
     history <- NULL
 
     importance <- gbm::relative.influence(model,n.trees = n.trees.gbm)
   } else if (algorithm == "NN") {
-    x = as.matrix(x)
+    x = as.matrix(x.scaled)
     y = as.matrix(y.tr)
 
     # function0 <- paste0("layer_dense(units=", n.cells.nn[1],
@@ -242,7 +255,9 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
   result <- list(model = model, method = method, algorithm = algorithm,
                  fitted.values = fitted.values, x = x, y = y, d = d,
                  y.tr = y.tr, w.tr = w.tr,
-                 n.trees.gbm = n.trees.gbm, history = history, importance = importance)
+                 n.trees.gbm = n.trees.gbm, history = history, importance = importance,
+                 param = list(x.scaled=x.scaled, name.num=name.num,
+                              x.mean=x.mean, x.sd=x.sd))
   class(result) <- "rcate.ml"
   return(result)
 }
