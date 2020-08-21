@@ -9,7 +9,6 @@ rcate.am(
   y,
   d,
   method = "MCMEA",
-  NIS = TRUE,
   nknots = NA,
   lambda.smooth = 1,
   nlambda = 30,
@@ -36,10 +35,7 @@ rcate.am(
 \item{method}{character string of CATE estimation method: "MCMEA" - modified co-variate
 method with efficiency augmentation or "RL" - R-learning.}
 
-\item{NIS}{logical of using non-parametric independent screening or not. The default is TRUE
-when \eqn{p < n/log(n)}.}
-
-\item{nknots}{number of knots for cubic spline. The default is \eqn{floor(sqrt(n)/2)}.}
+\item{nknots}{number of knots for B-spline.}
 
 \item{lambda.smooth}{scalar represent the smoothness penalty lambda2. The default is 2.}
 
@@ -88,13 +84,12 @@ a list of components
  \item x - matrix of predictors.
  \item y - vector of response values.
  \item d - vector of treatment assignment.
- \item mean.x - column means of predictors.
- \item sd.x -column standard deviation of predictors.
  \item y.tr - transformed outcome.
  \item w.tr - transformed weight.
  \item coef -coefficients.
  \item colnum - column number.
  \item nknots - number of knots of cubic spline.
+ \item param - required parameters for utility functions.
  }
 }
 \description{
@@ -105,16 +100,16 @@ Fits a \eqn{L_1} additive regression model with the group SCAD penalty.
 }
 \examples{
 n <- 1000; p <- 2; set.seed(2223)
-X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
-tau = 3*X[,1]-X[,2]
+X <- as.data.frame(matrix(runif(n*p,-3,3),nrow=n,ncol=p))
+tau = 3*X[,1]-2*X[,2]
 p = 1/(1+exp(-X[,1]+X[,2]))
 d = rbinom(n,1,p)
 t = 2*d-1
 y = 100+tau*t/2 + rnorm(n,0,1); set.seed(2223)
-x_val = matrix(rnorm(200*2,0,1),nrow=200,ncol=2)
-tau_val = 3*x_val[,1]-x_val[,2]
+x_val = as.data.frame(matrix(rnorm(200*2,0,1),nrow=200,ncol=2))
+tau_val = 3*x_val[,1]-2*x_val[,2]
 
-fit <- rcate.am(X,y,d,lambda.smooth = 2, method = 'RL')
+fit <- rcate.am(X,y,d,lambda.smooth = 4, method = 'RL')
 y_pred <- predict(fit,x_val)$pred
 plot(tau_val,y_pred);abline(0,1)
 

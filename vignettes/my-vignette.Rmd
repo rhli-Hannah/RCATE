@@ -158,7 +158,7 @@ where $Y$ represents the systolic BP change before and after the treatment. Sinc
 The following code showed how to use **RCATE** to estimate heterogeneous treatment effect:
 ```{r}
 # load RCATE package and hypertension data
-library(RCATE)
+#library(RCATE)
 data(hypertension)
 dt <- hypertension
 

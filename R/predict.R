@@ -78,7 +78,7 @@ predict.rcate.am <- function(object, x,...) {
       xval1 <- (x[,name.num][,i]-object$param$x.mean[i])/object$param$x.sd[i]
       center.xval <- cbind(center.xval,xval1)
     }
-    center.xval <- center.xval+matrix(rnorm(200*ncol(center.xval),0,0.001),nrow = 200)
+    center.xval <- center.xval+matrix(stats::rnorm(200*ncol(center.xval),0,0.001),nrow = 200)
 
     if (algorithm == "SAM") {
       if (is.vector(center.xval) & is.vector(center.x)) {

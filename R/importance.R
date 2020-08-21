@@ -21,16 +21,16 @@ importance.rcate.ml <- function(object, plotit=TRUE,...) {
   if (plotit==TRUE) {
     if (algorithm == "GBM") {
     importance <- data.frame(Importance=importance,name=names(importance))
-    par(mgp=c(5,1,0))
-    par(mar=c(8,8,4,2)+0.1)
+    graphics::par(mgp=c(5,1,0))
+    graphics::par(mar=c(8,8,4,2)+0.1)
     graphics::barplot(importance$Importance,
                       horiz=TRUE,names.arg = importance$name,
             main = 'Variable Importance from GBM',
             xlab = 'Importance', ylab= 'Variable', las=2, cex.names=0.8)
   } else if (algorithm == "NN") {
     importance <- data.frame(importance)
-    par(mgp=c(5,1,0))
-    par(mar=c(8,8,4,2)+0.1)
+    graphics::par(mgp=c(5,1,0))
+    graphics::par(mar=c(8,8,4,2)+0.1)
     graphics::barplot(importance$Importance,
             horiz = TRUE,names.arg = importance$Variable,
             main = 'Variable Importance from Neural Network',

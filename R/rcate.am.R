@@ -42,8 +42,7 @@ knot <- function(x, knots.op) {
 #' @param d vector of binary treatment assignment (0 or 1).
 #' @param method character string of CATE estimation method: "MCMEA" - modified co-variate
 #' method with efficiency augmentation or "RL" - R-learning.
-#' @param  NIS logical of using non-parametric independent screening or not. The default is TRUE
-#' when \eqn{p < n/log(n)}.
+#' @param nknots number of knots for B-spline.
 #' @param  lambda.smooth scalar represent the smoothness penalty lambda2. The default is 2.
 #' @param  nlambda number of lambda1s for cross-validation. The default is 30.
 #' @param  nfolds number of folds for cross-validation. The default is 5.
