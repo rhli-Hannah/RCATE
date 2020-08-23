@@ -1,4 +1,4 @@
-#Spliting rule.
+
 wmed_var <- function(x, y, weight) {
     splits <- sort(unique(x))
     wmed <- c()
@@ -18,7 +18,6 @@ wmed_var <- function(x, y, weight) {
 #' @param formula an object of class "formula".
 #' @param data a training data frame.
 #' @param minsize minimal leaf size of tree. Default is 5.
-#' @param newdata an optional test data frame. If NULL, the newdata=data.
 #' @param weights an optional vector of weights.
 #' @return a list of components
 #' \itemize{
@@ -28,23 +27,22 @@ wmed_var <- function(x, y, weight) {
 #'  \item importance - vector of importance level.
 #'  \item data - a training data frame.
 #'  \item pred - prediction of newdata.
-#'  \item newdata - a test data frame.
+#'  \item nodepred - leaf node prediction.
 #'  }
 #' @examples
 #' n <- 1000; p <- 3
 #' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 #' y = 1+sin(X[,1]) + rnorm(n,0,0.5)
 #' df <- data.frame(y,X)
-#' tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,newdata=df,weights=rep(1,1000))
-#' y_pred <- tree$pred
+#' tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,weights=rep(1,1000))
+#' y_pred <- predict.reg.tree(tree,df)$pred
 #' plot(y,y_pred);abline(0,1)
-#' @export
-reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
+reg_tree_imp <- function(formula, data, minsize, weights) {
 
     # coerce to data.frame
     data <- as.data.frame(data)
     row.names(data) <- seq(1:nrow(data))
-    newdata <- as.data.frame(newdata)
+    #newdata <- as.data.frame(newdata)
 
     # handle formula
     formula <- stats::terms.formula(formula)
@@ -84,7 +82,8 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
             }
 
             # estimate splitting criteria
-            splitting <- apply(X,  MARGIN = 2, FUN = wmed_var, y = this_data[, all.vars(formula)[1]], weight=weight)
+            splitting <- apply(X,  MARGIN = 2, FUN = wmed_var,
+                               y = this_data[, all.vars(formula)[1]], weight=weight)
 
             # get the min SSE
             tmp_splitter <- which.min(splitting[1,])
@@ -129,7 +128,7 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
             imp_gini <- imp_parent - imp_sum_child
 
             # insufficient minsize for split
-            if (any(current_nobs <= minsize)) {
+            if (any(current_nobs < minsize)) {
                 split_here <- rep(FALSE, 2)
             }
 
@@ -170,20 +169,20 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
     }
 
     # calculate predicted values
-    predicted <- c()
-    for (i in seq_len(nrow(leafs))) {
-        # extract index
-        ind <- as.numeric(rownames(subset(newdata, eval(parse(text = leafs[i, "FILTER"])))))
-        # estimator is the median y value of the leaf
-        predicted[ind] <- nodepred[i]
-    }
+    # predicted <- c()
+    # for (i in seq_len(nrow(leafs))) {
+    #   # extract index
+    #   ind <- as.numeric(rownames(subset(newdata, eval(parse(text = leafs[i, "FILTER"])))))
+    #   # estimator is the median y value of the leaf
+    #   predicted[ind] <- nodepred[i]
+    # }
 
     # calculate feature importance
     imp <- tree_info[, c("SPLIT", "IMP_GINI")]
 
     if (!all(is.na(imp$SPLIT))) {
         imp <- stats::aggregate(IMP_GINI ~ SPLIT, FUN = function(x, all) sum(x, na.rm = T)/sum(all, na.rm = T),
-                         data = imp, all = imp$IMP_GINI)
+                                data = imp, all = imp$IMP_GINI)
     }
 
     # rename to importance
@@ -192,8 +191,34 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 
     # return everything
     return(list(tree = tree_info, fit = fitted, formula = formula,
-                importance = imp, data = data, pred=predicted, newdata=newdata))
+                importance = imp, data = data, nodepred = nodepred))
 }
+
+#' Predict outcome from robust regression tree.
+#'
+#' \code{predict.reg.tree} predicts outcome from robust regression tree.
+#'
+#' @param object a robust regression tree.
+#' @param newdata dataframe contains covariates.
+#' @return a list of components
+#' \itemize{
+#'  \item pred - prediction of newdata.
+#'  \item newdata - a test data frame.
+#'  }
+predict.reg.tree <- function(object, newdata) {
+    leafs <- object$tree[object$tree$TERMINAL == "LEAF", ]
+    nodepred <- object$nodepred
+    # calculate predicted values
+    predicted <- c()
+    for (i in seq_len(nrow(leafs))) {
+        # extract index
+        ind <- as.numeric(rownames(subset(newdata, eval(parse(text = leafs[i, "FILTER"])))))
+        # estimator is the median y value of the leaf
+        predicted[ind] <- nodepred[i]
+    }
+    return(list(pred = predicted,newdata = newdata))
+}
+
 
 #' Robust random forests.
 #'
@@ -203,28 +228,28 @@ reg_tree_imp <- function(formula, data, minsize, newdata, weights) {
 #' @param n_trees number of trees. Default is 50.
 #' @param feature_frac fraction of features used in each split. Default is 1/2.
 #' @param data a training data frame.
-#' @param minnodes minimal leaf size of tree. Default is 5.
-#' @param newdata an optional test data frame. If NULL, the newdata=data.
 #' @param weights an optional vector of weights.
+#' @param minnodes minimal leaf size of tree. Default is 5.
 #' @return a list of components
 #' \itemize{
 #'  \item fit - estimation method.
-#'  \item pred - prediction of newdata.
 #'  \item importance - vector of variable importance.
+#'  \item tree - tree structure and needed parameters.
+#'  \item data - training data.
+#'  \item nodepreds - leaf node predictions.
 #'  }
 #' @examples
 #' n <- 1000; p <- 3
 #' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 #' y = 1+sin(X[,1]) + rnorm(n,0,0.5)
 #' df <- data.frame(y,X)
-#' RF <- reg_rf(y~X1+X2+X3,data=df,newdata=df,weights=rep(1,1000),n_trees=5)
-#' y_pred <- RF$pred
-#' plot(y,y_pred)
-#' @export
-reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights, minnodes=5) {
+#' RF <- reg_rf(y~X1+X2+X3,data=df, weights=rep(1,1000),n_trees=5)
+#' y_pred <- predict.reg.rf(RF,df)$pred
+#' plot(y,y_pred);abline(0,1)
+reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, weights, minnodes=5) {
 
     # define function to sprout a single tree
-    sprout_tree <- function(formula, feature_frac, data, newdata, weights) {
+    sprout_tree <- function(formula, feature_frac, data, weights) {
         # extract features
         features <- all.vars(formula)[-1]
 
@@ -247,15 +272,14 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
         # create new formula
         formula_new <-
             stats::as.formula(paste0(target, " ~ -1 + ", paste0(features_sample,
-                                                         collapse =  " + ")))
+                                                                collapse =  " + ")))
 
         # fit the regression tree
         tree <- reg_tree_imp(formula = formula_new,
-                             data = train, newdata=newdata,
-                             minsize = minnodes, weights = w.train)
+                             data = train, minsize = minnodes, weights = w.train)
 
         # save the fit and the importance
-        return(list(tree$fit, tree$importance, tree$pred))
+        return(list(tree$fit, tree$importance, tree$tree, tree$nodepred))
     }
 
     # apply the rf_tree function n_trees times with plyr::raply
@@ -266,7 +290,6 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
             formula = formula,
             feature_frac = feature_frac,
             data = data,
-            newdata = newdata,
             weights = weights
         ),
         .progress = "text"
@@ -274,11 +297,11 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 
     # extract fit
     fits <- do.call("cbind", trees[, 1])
-    preds <- do.call("cbind", trees[, 3])
+    #preds <- do.call("cbind", trees[, 3])
 
     # calculate the final fit as a mean of all regression trees
     rf_fit <- apply(fits, MARGIN = 1, mean, na.rm = TRUE)
-    rf_pred <- apply(preds, MARGIN = 1, mean, na.rm = TRUE)
+    #rf_pred <- apply(preds, MARGIN = 1, mean, na.rm = TRUE)
 
     # extract the feature importance
     imp_full <- do.call("rbind", trees[, 2])
@@ -289,8 +312,44 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
     # build the ratio for interpretation purposes
     imp$IMPORTANCE <- imp$IMPORTANCE / sum(imp$IMPORTANCE)
 
+    # predict vector
+    nodepreds <- trees[, 4]
+
     # export
-    return(list(fit = rf_fit, pred = rf_pred, importance = imp))
+    return(list(fit = rf_fit, importance = imp, tree = trees[,3], data=data,
+                nodepreds = nodepreds, fitted = rf_fit))
+}
+
+#' Predict outcome from robust random forests.
+#'
+#' \code{predict.reg.rf} predicts outcome from robust random forests.
+#'
+#' @param object a robust random forests.
+#' @param newdata dataframe contains covariates.
+#' @return a list of components
+#' \itemize{
+#'  \item pred - prediction of newdata.
+#'  \item newdata - a test data frame.
+#'  }
+predict.reg.rf <- function(object,newdata) {
+    tree_info <- object$tree
+    pred.mat <- matrix(NA, nrow = length(tree_info), ncol = nrow(newdata))
+    nodepreds <- object$nodepreds
+
+    for (j in 1:length(tree_info)) {
+        leafs <- tree_info[[j]][tree_info[[j]]$TERMINAL=='LEAF',]
+        nodepred <- nodepreds[[j]]
+        predicted <- c()
+        for (i in seq_len(nrow(leafs))) {
+            # extract index
+            ind <- as.numeric(rownames(subset(newdata, eval(parse(text = leafs[i, "FILTER"])))))
+            # estimator is the median y value of the leaf
+            predicted[ind] <- nodepred[i]
+        }
+        pred.mat[j,] <- predicted
+    }
+    pred <- colMeans(pred.mat)
+    return(list(pred = pred, newdata=newdata))
 }
 
 #' Robust estimation of treatment effect using random forests.
@@ -306,8 +365,6 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #' effect function if algorithm="GBM". The default is 1000.
 #' @param feature.frac tuning parameter the number of interactions for estimating treatment
 #' effect function if algorithm="GBM". The default value is 2.
-#' @param newdata vector of the number of neurals in each hidden layer if algorithm='NN'.
-#' The default is two layers with each layer the half size of previous layer.
 #' @param minnodes vector of the dropout rate of each hidden layer if algorithm='NN'.
 #' The default is no dropout.
 #' @param n.trees.p tuning parameter the number of trees used for estimating propensity score
@@ -333,37 +390,52 @@ reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, newdata, weights
 #' @return a list of components
 #' \itemize{
 #'  \item fit - estimation method.
-#'  \item pred - prediction of newdata.
 #'  \item importance - vector of variable importance.
+#'  \item tree - trees' structure and needed parameters.
+#'  \item data - training data.
+#'  \item nodepreds - leaf nodes predictions.
 #'  }
 #' @examples
 #' n <- 1000; p <- 3
-#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p); set.seed(2223)
+#' X <- as.data.frame(matrix(runif(n*p,-3,3),nrow=n,ncol=p)); set.seed(2223)
 #' tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 #' p = 1/(1+exp(-X[,1]+X[,2]))
 #' d = rbinom(n,1,p)
 #' t = 2*d-1
 #' y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1); set.seed(2223)
-#' x_val = matrix(rnorm(200*3,0,1),nrow=200,ncol=3)
+#' x_val = as.data.frame(matrix(rnorm(200*3,0,1),nrow=200,ncol=3))
 #' tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]
 #'
 #' # Use MCM-EA transformation and GBM to estimate CATE
-#' fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR',feature.frac = 0.8, minnodes = 5)
-#' y_pred <- fit$pred
+#' fit <- rcate.rf(X,y,d,method='DR',feature.frac = 0.8, minnodes = 3, n.trees.rf = 5)
+#' y_pred <- predict.rcate.rf(fit,x_val)$pred
 #' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.rf <- function(x, y, d, method = "MCMEA",
-                  n.trees.p = 40000, shrinkage.p = 0.005, n.minobsinnode.p = 10,
-                  interaction.depth.p = 1, cv.p = 5, n.trees.mu = c(1:50) * 50,
-                  shrinkage.mu = 0.01, n.minobsinnode.mu = 5,
-                  interaction.depth.mu = 5, cv.mu = 5,
-                  n.trees.rf = 50, feature.frac = 0.8, newdata = NULL, minnodes = 5) {
+                     n.trees.p = 40000, shrinkage.p = 0.005, n.minobsinnode.p = 10,
+                     interaction.depth.p = 1, cv.p = 5, n.trees.mu = c(1:50) * 50,
+                     shrinkage.mu = 0.01, n.minobsinnode.mu = 5,
+                     interaction.depth.mu = 5, cv.mu = 5,
+                     n.trees.rf = 50, feature.frac = 0.8, newdata = NULL, minnodes = 5) {
     # Calculate T=2D-1
     t <- 2 * d - 1
 
+    x.num <- dplyr::select_if(x, is.numeric)
+    x.mean <- apply(x.num, 2, mean)
+    x.sd <- apply(x.num, 2, sd)
+    x.num.scaled <- scale(x.num)
+    name.num <- colnames(x.num)
+    x.other <- data.frame(x[ , -which(names(x) %in% name.num)])
+    if (ncol(x.other)==0) {
+        x.scaled <- x.num.scaled
+    } else {
+        x.other <- apply(x.other, 2, function(x) as.numeric(as.character(x)))
+        x.scaled <- cbind(x.num.scaled,x.other)
+    }
+
     # Estimate mu0(x), mu1(x) and p(x)
-    data.p <- data.frame(cbind(d, x))
-    #colnames(data.p) <- c("d", paste0("X", 1:ncol(x)))
+    data.p <- data.frame(cbind(d, x.scaled))
+    colnames(data.p)[1] <- c("d")
     data.p$d <- as.factor(data.p$d)
     gbmGrid.p <- expand.grid(interaction.depth = interaction.depth.p,
                              n.trees = n.trees.p, shrinkage = shrinkage.p,
@@ -374,8 +446,8 @@ rcate.rf <- function(x, y, d, method = "MCMEA",
                              tuneGrid = gbmGrid.p)
     pscore.hat <- caret::predict.train(gbmFit.p, newdata = data.p, type = "prob")[, 2]
 
-    data00 <- data.frame(cbind(y, x, d))
-    colnames(data00) <- c("y", paste0("X", 1:ncol(x)), "d")
+    data00 <- data.frame(cbind(y, x.scaled, d))
+    colnames(data00)[c(1,ncol(data00))] <- c("y", "d")
     data020 <- data00[data00$d == 0, ]
     data021 <- data00[data00$d == 1, ]
 
@@ -385,15 +457,15 @@ rcate.rf <- function(x, y, d, method = "MCMEA",
     gbmFit.mu <- caret::train(y ~ ., data = data00[, -ncol(data00)],
                               method = "gbm", verbose = FALSE,
                               trControl = caret::trainControl(method = "cv",
-                                                       number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
+                                                              number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
     gbmFit.mu1 <- caret::train(y ~ ., data = data021[, -ncol(data021)],
                                method = "gbm", verbose = FALSE,
                                trControl = caret::trainControl(method = "cv",
-                                                        number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
+                                                               number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
     gbmFit.mu0 <- caret::train(y ~ ., data = data020[, -ncol(data020)],
                                method = "gbm", verbose = FALSE,
                                trControl = caret::trainControl(method = "cv",
-                                                        number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
+                                                               number = cv.mu), tuneGrid = gbmGrid.mu, metric = "MAE")
 
     mu0 <- caret::predict.train(gbmFit.mu0, newdata = data00)
     mu1 <- caret::predict.train(gbmFit.mu1, newdata = data00)
@@ -412,13 +484,70 @@ rcate.rf <- function(x, y, d, method = "MCMEA",
         w.tr <- abs((t - 2 * pscore.hat + 1)/(2 * pscore.hat * (1 - pscore.hat)))
     }
 
-    data.rf <-  data.frame(y.tr,x)
-    if (is.null(newdata)) {newdata.rf <- data.rf} else {newdata.rf <- data.frame(newdata)}
-    formula.rf <- stats::as.formula(paste0('y.tr', " ~ ",paste0(colnames(data.frame(x)), collapse = " + ")))
+    data.rf <-  data.frame(y.tr,x.scaled)
+    formula.rf <- stats::as.formula(paste0('y.tr', " ~ ",paste0(colnames(data.frame(x.scaled)), collapse = " + ")))
     result <- reg_rf(formula=formula.rf, n_trees = n.trees.rf, feature_frac = feature.frac,
-           data=data.rf, newdata=newdata.rf, weights = w.tr, minnodes = 5)
+                     data=data.rf, weights = w.tr, minnodes = minnodes)
+    result <- c(result, list(param = list(x.scaled=x.scaled, name.num=name.num,
+                                          x.mean=x.mean, x.sd=x.sd)))
 
     return(result)
+}
+
+#' Predict treatment effect from robust random forests.
+#'
+#' \code{predict.rcate.rf} predicts treatment effect from robust random forests.
+#'
+#' @param object a robust random forests.
+#' @param newdata dataframe contains covariates.
+#' @param ... other.
+#' @return a list of components
+#' \itemize{
+#'  \item pred - prediction of newdata.
+#'  \item newdata - a test data frame.
+#'  }
+#' @rdname predict.rcate.rf
+#' @export
+predict.rcate.rf <- function(object, newdata,...) {
+    tree_info <- object$tree
+    pred.mat <- matrix(NA, nrow = length(tree_info), ncol = nrow(newdata))
+    nodepreds <- object$nodepreds
+    param <- object$param
+    x.mean <- param$x.mean
+    x.sd <- param$x.sd
+    name.num <- param$name.num
+
+    x.num <- dplyr::select_if(newdata, is.numeric)
+    scaled <- NULL
+    for (i in 1:ncol(x.num)) {
+        scaled1 <- (x.num[,i]-x.mean[i])/x.sd[i]
+        scaled <- cbind(scaled,scaled1)
+    }
+    x.num.scaled <- scaled
+    x.other <- data.frame(newdata[ , -which(names(newdata) %in% name.num)])
+    if (ncol(x.other)==0) {
+        x.scaled <- x.num.scaled
+    } else {
+        x.other <- apply(x.other, 2, function(x) as.numeric(as.character(x)))
+        x.scaled <- cbind(x.num.scaled,x.other)
+    }
+    colnames(x.scaled) <- colnames(object$param$x.scaled)
+
+    for (j in 1:length(tree_info)) {
+        leafs <- tree_info[[j]][tree_info[[j]]$TERMINAL=='LEAF',]
+        nodepred <- nodepreds[[j]]
+        predicted <- c()
+        for (i in seq_len(nrow(leafs))) {
+            # extract index
+            ind <- as.numeric(rownames(subset(as.data.frame(x.scaled),
+                                              eval(parse(text = leafs[i, "FILTER"])))))
+            # estimator is the median y value of the leaf
+            predicted[ind] <- nodepred[i]
+        }
+        pred.mat[j,] <- predicted
+    }
+    pred <- colMeans(pred.mat)
+    return(list(pred = pred, newdata=newdata))
 }
 
 

@@ -211,7 +211,7 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
         self$dense1.1 <- keras::layer_dense(units = n.cells.nn[1], activation = "relu")
         self$dense1.5 <- keras::layer_dropout(rate = dropout.nn[1])
         self$dense2 <- keras::layer_dense(units = n.cells.nn[2:length(n.cells.nn)], activation = "relu")
-        #self$dense2.5 <- keras::layer_dropout(rate = dropout.nn[2])
+        self$dense2.5 <- keras::layer_dropout(rate = dropout.nn[1])
         self$dense3 <- keras::layer_dense(units = 1, activation = "linear")
 
         if (use_dp)

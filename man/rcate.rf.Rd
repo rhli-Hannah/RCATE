@@ -71,9 +71,6 @@ effect function if algorithm="GBM". The default is 1000.}
 \item{feature.frac}{tuning parameter the number of interactions for estimating treatment
 effect function if algorithm="GBM". The default value is 2.}
 
-\item{newdata}{vector of the number of neurals in each hidden layer if algorithm='NN'.
-The default is two layers with each layer the half size of previous layer.}
-
 \item{minnodes}{vector of the dropout rate of each hidden layer if algorithm='NN'.
 The default is no dropout.}
 }
@@ -81,8 +78,10 @@ The default is no dropout.}
 a list of components
 \itemize{
  \item fit - estimation method.
- \item pred - prediction of newdata.
  \item importance - vector of variable importance.
+ \item tree - trees' structure and needed parameters.
+ \item data - training data.
+ \item nodepreds - leaf nodes predictions.
  }
 }
 \description{
@@ -90,17 +89,17 @@ a list of components
 }
 \examples{
 n <- 1000; p <- 3
-X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p); set.seed(2223)
+X <- as.data.frame(matrix(runif(n*p,-3,3),nrow=n,ncol=p)); set.seed(2223)
 tau = 6*sin(2*X[,1])+3*(X[,2]+3)*X[,3]
 p = 1/(1+exp(-X[,1]+X[,2]))
 d = rbinom(n,1,p)
 t = 2*d-1
 y = 100+4*X[,1]+X[,2]-3*X[,3]+tau*t/2 + rnorm(n,0,1); set.seed(2223)
-x_val = matrix(rnorm(200*3,0,1),nrow=200,ncol=3)
+x_val = as.data.frame(matrix(rnorm(200*3,0,1),nrow=200,ncol=3))
 tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]
 
 # Use MCM-EA transformation and GBM to estimate CATE
-fit <- rcate.rf(X,y,d,newdata=data.frame(x_val),method='DR',feature.frac = 0.8, minnodes = 5)
-y_pred <- fit$pred
+fit <- rcate.rf(X,y,d,method='DR',feature.frac = 0.8, minnodes = 3, n.trees.rf = 5)
+y_pred <- predict.rcate.rf(fit,x_val)$pred
 plot(tau_val,y_pred);abline(0,1)
 }

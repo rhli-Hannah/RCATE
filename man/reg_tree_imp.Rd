@@ -4,7 +4,7 @@
 \alias{reg_tree_imp}
 \title{Robust regression tree.}
 \usage{
-reg_tree_imp(formula, data, minsize, newdata, weights)
+reg_tree_imp(formula, data, minsize, weights)
 }
 \arguments{
 \item{formula}{an object of class "formula".}
@@ -12,8 +12,6 @@ reg_tree_imp(formula, data, minsize, newdata, weights)
 \item{data}{a training data frame.}
 
 \item{minsize}{minimal leaf size of tree. Default is 5.}
-
-\item{newdata}{an optional test data frame. If NULL, the newdata=data.}
 
 \item{weights}{an optional vector of weights.}
 }
@@ -26,7 +24,7 @@ a list of components
  \item importance - vector of importance level.
  \item data - a training data frame.
  \item pred - prediction of newdata.
- \item newdata - a test data frame.
+ \item nodepred - leaf node prediction.
  }
 }
 \description{
@@ -37,7 +35,7 @@ n <- 1000; p <- 3
 X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 y = 1+sin(X[,1]) + rnorm(n,0,0.5)
 df <- data.frame(y,X)
-tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,newdata=df,weights=rep(1,1000))
-y_pred <- tree$pred
+tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,weights=rep(1,1000))
+y_pred <- predict.reg.tree(tree,df)$pred
 plot(y,y_pred);abline(0,1)
 }

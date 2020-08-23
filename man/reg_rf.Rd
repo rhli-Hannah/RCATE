@@ -4,15 +4,7 @@
 \alias{reg_rf}
 \title{Robust random forests.}
 \usage{
-reg_rf(
-  formula,
-  n_trees = 50,
-  feature_frac = 1/2,
-  data,
-  newdata,
-  weights,
-  minnodes = 5
-)
+reg_rf(formula, n_trees = 50, feature_frac = 1/2, data, weights, minnodes = 5)
 }
 \arguments{
 \item{formula}{an object of class "formula".}
@@ -23,8 +15,6 @@ reg_rf(
 
 \item{data}{a training data frame.}
 
-\item{newdata}{an optional test data frame. If NULL, the newdata=data.}
-
 \item{weights}{an optional vector of weights.}
 
 \item{minnodes}{minimal leaf size of tree. Default is 5.}
@@ -33,8 +23,10 @@ reg_rf(
 a list of components
 \itemize{
  \item fit - estimation method.
- \item pred - prediction of newdata.
  \item importance - vector of variable importance.
+ \item tree - tree structure and needed parameters.
+ \item data - training data.
+ \item nodepreds - leaf node predictions.
  }
 }
 \description{
@@ -45,7 +37,7 @@ n <- 1000; p <- 3
 X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
 y = 1+sin(X[,1]) + rnorm(n,0,0.5)
 df <- data.frame(y,X)
-RF <- reg_rf(y~X1+X2+X3,data=df,newdata=df,weights=rep(1,1000),n_trees=5)
-y_pred <- RF$pred
-plot(y,y_pred)
+RF <- reg_rf(y~X1+X2+X3,data=df, weights=rep(1,1000),n_trees=5)
+y_pred <- predict.reg.rf(RF,df)$pred
+plot(y,y_pred);abline(0,1)
 }
