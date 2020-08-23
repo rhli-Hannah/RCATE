@@ -1,17 +1,17 @@
 #' Importance level from machine learning algorithms.
 #'
-#' \code{importance.rcate.ml} Returns the variable importance level from "rcate.ml" model.
+#' \code{importance.rcate} Returns the variable importance level.
 #'
-#' @param object "rcate.ml" object.
+#' @param object "rcate.ml" or "rcate.rf" object.
 #' @param plotit whether plot the importance level.
 #' @param ... other.
 #' @return a list of components
 #' \itemize{
 #'  \item importance - vector of variable importance level.
 #'  }
-#' @rdname importance.rcate.ml
+#' @rdname importance.rcate
 #' @export
-importance.rcate.ml <- function(object, plotit=TRUE,...) {
+importance.rcate <- function(object, plotit=TRUE,...) {
   importance <- object$importance
   algorithm <- object$algorithm
 
@@ -35,33 +35,16 @@ importance.rcate.ml <- function(object, plotit=TRUE,...) {
             horiz = TRUE,names.arg = importance$Variable,
             main = 'Variable Importance from Neural Network',
             xlab = 'Importance', ylab= 'Variable', las=2, cex.names=0.8)
+  } else if (algorithm == 'RF') {
+    graphics::par(mgp=c(5,1,0))
+    graphics::par(mar=c(8,8,4,2)+0.1)
+    graphics::barplot(importance$IMPORTANCE,
+                      horiz = TRUE,names.arg = importance$FEATURES,
+                      main = 'Variable Importance from Random Forests',
+                      xlab = 'Importance', ylab= 'Variable')
+    colnames(importance) <- c('Variable','Importance')
   }
   }
   return(importance)
 }
 
-#' Importance level from machine learning algorithms.
-#'
-#' \code{importance.rcate.rf} Returns the variable importance level from "rcate.rf" model.
-#'
-#' @param object "rcate.rf" object.
-#' @param plotit whether plot the importance level.
-#' @param ... other.
-#' @return a list of components
-#' \itemize{
-#'  \item importance - vector of variable importance level.
-#'  }
-#' @rdname importance.rcate.rf
-#' @export
-importance.rcate.rf <- function(object, plotit=TRUE,...) {
- importance <- object$importance
-
- if (plotit==TRUE) {
-   graphics::barplot(importance$IMPORTANCE,
-           horiz = TRUE,names.arg = importance$FEATURES,
-           main = 'Variable Importance from Random Forests',
-           xlab = 'Importance', ylab= 'Variable')
- }
- colnames(importance) <- c('Variable','Importance')
- return(importance)
-}

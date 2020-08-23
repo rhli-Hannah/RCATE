@@ -158,7 +158,7 @@ where $Y$ represents the systolic BP change before and after the treatment. Sinc
 The following code showed how to use **RCATE** to estimate heterogeneous treatment effect:
 ```{r}
 # load RCATE package and hypertension data
-#library(RCATE)
+library(RCATE)
 data(hypertension)
 dt <- hypertension
 
@@ -181,7 +181,7 @@ fit <- rcate.ml(x=x,y=y,d=d)
 Following code and barplot showed the importance level of each variable.
 ```{r fig.height = 7, fig.width = 7}
 # Variable importance level
-importance <- importance.rcate.ml(fit)
+importance <- importance.rcate(fit)
 ```
 
 Following code and figure showed the marginal treatment effect of PDC by setting other continuous variable at their mean and binary variable at zero.

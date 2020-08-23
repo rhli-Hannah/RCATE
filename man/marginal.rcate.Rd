@@ -7,7 +7,7 @@
 marginal.rcate(object, variable.name = NULL, ...)
 }
 \arguments{
-\item{object}{"rcate.ml" or "rcate.am" object.}
+\item{object}{"rcate.ml", "rcate.rf" or "rcate.am" object.}
 
 \item{variable.name}{the name of interested variable. Default is the name of the
 first continuous variable.}
@@ -15,5 +15,5 @@ first continuous variable.}
 \item{...}{other.}
 }
 \description{
-\code{marginal.rcate} Returns the variable importance level from "rcate.ml" model.
+\code{marginal.rcate} Returns the marginal treatment effect plot.
 }

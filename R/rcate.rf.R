@@ -29,14 +29,6 @@ wmed_var <- function(x, y, weight) {
 #'  \item pred - prediction of newdata.
 #'  \item nodepred - leaf node prediction.
 #'  }
-#' @examples
-#' n <- 1000; p <- 3
-#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
-#' y = 1+sin(X[,1]) + rnorm(n,0,0.5)
-#' df <- data.frame(y,X)
-#' tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,weights=rep(1,1000))
-#' y_pred <- predict.reg.tree(tree,df)$pred
-#' plot(y,y_pred);abline(0,1)
 reg_tree_imp <- function(formula, data, minsize, weights) {
 
     # coerce to data.frame
@@ -238,14 +230,6 @@ predict.reg.tree <- function(object, newdata) {
 #'  \item data - training data.
 #'  \item nodepreds - leaf node predictions.
 #'  }
-#' @examples
-#' n <- 1000; p <- 3
-#' X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
-#' y = 1+sin(X[,1]) + rnorm(n,0,0.5)
-#' df <- data.frame(y,X)
-#' RF <- reg_rf(y~X1+X2+X3,data=df, weights=rep(1,1000),n_trees=5)
-#' y_pred <- predict.reg.rf(RF,df)$pred
-#' plot(y,y_pred);abline(0,1)
 reg_rf <- function(formula, n_trees=50, feature_frac=1/2, data, weights, minnodes=5) {
 
     # define function to sprout a single tree
@@ -408,15 +392,15 @@ predict.reg.rf <- function(object,newdata) {
 #'
 #' # Use MCM-EA transformation and GBM to estimate CATE
 #' fit <- rcate.rf(X,y,d,method='DR',feature.frac = 0.8, minnodes = 3, n.trees.rf = 5)
-#' y_pred <- predict.rcate.rf(fit,x_val)$pred
+#' y_pred <- predict(fit,x_val)$pred
 #' plot(tau_val,y_pred);abline(0,1)
 #' @export
 rcate.rf <- function(x, y, d, method = "MCMEA",
+                     n.trees.rf = 50, feature.frac = 0.8, minnodes = 5,
                      n.trees.p = 40000, shrinkage.p = 0.005, n.minobsinnode.p = 10,
                      interaction.depth.p = 1, cv.p = 5, n.trees.mu = c(1:50) * 50,
                      shrinkage.mu = 0.01, n.minobsinnode.mu = 5,
-                     interaction.depth.mu = 5, cv.mu = 5,
-                     n.trees.rf = 50, feature.frac = 0.8, newdata = NULL, minnodes = 5) {
+                     interaction.depth.mu = 5, cv.mu = 5) {
     # Calculate T=2D-1
     t <- 2 * d - 1
 
@@ -489,66 +473,11 @@ rcate.rf <- function(x, y, d, method = "MCMEA",
     result <- reg_rf(formula=formula.rf, n_trees = n.trees.rf, feature_frac = feature.frac,
                      data=data.rf, weights = w.tr, minnodes = minnodes)
     result <- c(result, list(param = list(x.scaled=x.scaled, name.num=name.num,
-                                          x.mean=x.mean, x.sd=x.sd)))
-
+                                          x.mean=x.mean, x.sd=x.sd), algorithm = 'RF', x=x))
+    class(result) <- "rcate.rf"
     return(result)
 }
 
-#' Predict treatment effect from robust random forests.
-#'
-#' \code{predict.rcate.rf} predicts treatment effect from robust random forests.
-#'
-#' @param object a robust random forests.
-#' @param newdata dataframe contains covariates.
-#' @param ... other.
-#' @return a list of components
-#' \itemize{
-#'  \item pred - prediction of newdata.
-#'  \item newdata - a test data frame.
-#'  }
-#' @rdname predict.rcate.rf
-#' @export
-predict.rcate.rf <- function(object, newdata,...) {
-    tree_info <- object$tree
-    pred.mat <- matrix(NA, nrow = length(tree_info), ncol = nrow(newdata))
-    nodepreds <- object$nodepreds
-    param <- object$param
-    x.mean <- param$x.mean
-    x.sd <- param$x.sd
-    name.num <- param$name.num
-
-    x.num <- dplyr::select_if(newdata, is.numeric)
-    scaled <- NULL
-    for (i in 1:ncol(x.num)) {
-        scaled1 <- (x.num[,i]-x.mean[i])/x.sd[i]
-        scaled <- cbind(scaled,scaled1)
-    }
-    x.num.scaled <- scaled
-    x.other <- data.frame(newdata[ , -which(names(newdata) %in% name.num)])
-    if (ncol(x.other)==0) {
-        x.scaled <- x.num.scaled
-    } else {
-        x.other <- apply(x.other, 2, function(x) as.numeric(as.character(x)))
-        x.scaled <- cbind(x.num.scaled,x.other)
-    }
-    colnames(x.scaled) <- colnames(object$param$x.scaled)
-
-    for (j in 1:length(tree_info)) {
-        leafs <- tree_info[[j]][tree_info[[j]]$TERMINAL=='LEAF',]
-        nodepred <- nodepreds[[j]]
-        predicted <- c()
-        for (i in seq_len(nrow(leafs))) {
-            # extract index
-            ind <- as.numeric(rownames(subset(as.data.frame(x.scaled),
-                                              eval(parse(text = leafs[i, "FILTER"])))))
-            # estimator is the median y value of the leaf
-            predicted[ind] <- nodepred[i]
-        }
-        pred.mat[j,] <- predicted
-    }
-    pred <- colMeans(pred.mat)
-    return(list(pred = pred, newdata=newdata))
-}
 
 
 

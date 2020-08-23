@@ -30,12 +30,3 @@ a list of components
 \description{
 \code{reg_tree} fit robust regression tree based on weighted median splitting rule.
 }
-\examples{
-n <- 1000; p <- 3
-X <- matrix(runif(n*p,-3,3),nrow=n,ncol=p)
-y = 1+sin(X[,1]) + rnorm(n,0,0.5)
-df <- data.frame(y,X)
-tree <- reg_tree_imp(y~X1+X2+X3,data=df,minsize=3,weights=rep(1,1000))
-y_pred <- predict.reg.tree(tree,df)$pred
-plot(y,y_pred);abline(0,1)
-}

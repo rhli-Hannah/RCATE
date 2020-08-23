@@ -183,23 +183,6 @@ rcate.ml <- function(x, y, d, method = "MCMEA", algorithm = "GBM",
     x = as.matrix(x.scaled)
     y = as.matrix(y.tr)
 
-    # function0 <- paste0("layer_dense(units=", n.cells.nn[1],
-    #                     ", activation='relu',input_shape=ncol(x)) %>% layer_dropout(",
-    #                     dropout.nn[1], ") %>%")
-    # function1 <- paste0("layer_dense(units=", n.cells.nn[2:length(n.cells.nn)],
-    #                     ", activation='relu') %>% layer_dropout(",
-    #                     dropout.nn[2:length(dropout.nn)], ") %>%")
-    # function2 <- paste0("keras_model_sequential() %>% ", function0,
-    #                     do.call(paste, c(as.list(function1), sep = "")),
-    #                     "layer_dense(units=1, activation='linear')")
-    #
-    # model = eval(parse(text = function2))
-    #
-    # model %>% keras::compile(loss = "mae", optimizer = "adam")
-    #
-    # model %>% keras::fit(x, y, epochs = epochs.nn, verbose = 0, sample_weight = w.tr)
-    # fitted.values <- model %>% predict(x)
-
     keras_model_simple_mlp <- function(use_bn = FALSE, use_dp = FALSE,
                                        name = NULL) {
 

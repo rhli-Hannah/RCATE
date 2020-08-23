@@ -9,6 +9,9 @@ rcate.rf(
   y,
   d,
   method = "MCMEA",
+  n.trees.rf = 50,
+  feature.frac = 0.8,
+  minnodes = 5,
   n.trees.p = 40000,
   shrinkage.p = 0.005,
   n.minobsinnode.p = 10,
@@ -18,11 +21,7 @@ rcate.rf(
   shrinkage.mu = 0.01,
   n.minobsinnode.mu = 5,
   interaction.depth.mu = 5,
-  cv.mu = 5,
-  n.trees.rf = 50,
-  feature.frac = 0.8,
-  newdata = NULL,
-  minnodes = 5
+  cv.mu = 5
 )
 }
 \arguments{
@@ -34,6 +33,15 @@ rcate.rf(
 
 \item{method}{character string of CATE estimation method: "MCMEA" - modified co-variate
 method with efficiency augmentation, "RL" - R-learning, or "DR" - doubly robust method.}
+
+\item{n.trees.rf}{tuning parameter the number of trees used in GBM for estimating treatment
+effect function if algorithm="GBM". The default is 1000.}
+
+\item{feature.frac}{tuning parameter the number of interactions for estimating treatment
+effect function if algorithm="GBM". The default value is 2.}
+
+\item{minnodes}{vector of the dropout rate of each hidden layer if algorithm='NN'.
+The default is no dropout.}
 
 \item{n.trees.p}{tuning parameter the number of trees used for estimating propensity score
 with GBM. the default value is 40000.}
@@ -64,15 +72,6 @@ function with GBM. the default value is 5.}
 
 \item{cv.mu}{tuning parameter the folds for cross-validation for estimating mean function with
 GBM. The default value is 5.}
-
-\item{n.trees.rf}{tuning parameter the number of trees used in GBM for estimating treatment
-effect function if algorithm="GBM". The default is 1000.}
-
-\item{feature.frac}{tuning parameter the number of interactions for estimating treatment
-effect function if algorithm="GBM". The default value is 2.}
-
-\item{minnodes}{vector of the dropout rate of each hidden layer if algorithm='NN'.
-The default is no dropout.}
 }
 \value{
 a list of components
@@ -100,6 +99,6 @@ tau_val = 6*sin(2*x_val[,1])+3*(x_val[,2]+3)*x_val[,3]
 
 # Use MCM-EA transformation and GBM to estimate CATE
 fit <- rcate.rf(X,y,d,method='DR',feature.frac = 0.8, minnodes = 3, n.trees.rf = 5)
-y_pred <- predict.rcate.rf(fit,x_val)$pred
+y_pred <- predict(fit,x_val)$pred
 plot(tau_val,y_pred);abline(0,1)
 }
